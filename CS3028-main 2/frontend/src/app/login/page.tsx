@@ -26,7 +26,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch('https://cs3028.onrender.com/auth/login', {
+      const res = await fetch('http://127.0.0.1:5000/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),

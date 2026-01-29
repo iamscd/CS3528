@@ -41,7 +41,7 @@ export default function ModuleCreatorPage() {
     }
     setToken(storedToken);
 
-    fetch("https://cs3028.onrender.com/api/user/profile", {
+    fetch("http://127.0.0.1:5000/api/user/profile", {
       headers: { Authorization: `Bearer ${storedToken}` },
     })
       .then((res) => {
@@ -248,7 +248,7 @@ export default function ModuleCreatorPage() {
     if (error) return alert(error);
 
     // Create course
-    const courseRes = await fetch("https://cs3028.onrender.com/courses", {
+    const courseRes = await fetch("http://127.0.0.1:5000/courses", {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({ title, description }),
@@ -259,7 +259,7 @@ export default function ModuleCreatorPage() {
 
     // Create modules, lessons, quizzes
     for (const module of modules) {
-      const moduleRes = await fetch("https://cs3028.onrender.com/modules", {
+      const moduleRes = await fetch("http://127.0.0.1:5000/modules", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({ title: module.title, description: module.description, course_id: courseId }),
@@ -268,7 +268,7 @@ export default function ModuleCreatorPage() {
       const moduleId = moduleData.module_id;
 
       for (const lesson of module.lessons) {
-        const lessonRes = await fetch("https://cs3028.onrender.com/lessons", {
+        const lessonRes = await fetch("http://127.0.0.1:5000/lessons", {
           method: "POST",
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -282,7 +282,7 @@ export default function ModuleCreatorPage() {
         const lessonId = lessonData.lesson_id;
 
         for (const q of lesson.quiz) {
-          await fetch("https://cs3028.onrender.com/quizzes", {
+          await fetch("http://127.0.0.1:5000/quizzes", {
             method: "POST",
             headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
             body: JSON.stringify({

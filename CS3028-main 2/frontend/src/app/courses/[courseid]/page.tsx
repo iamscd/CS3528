@@ -33,14 +33,14 @@ export default function CoursePage() {
         const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
 
         const courseRes = await fetch(
-          `https://cs3028.onrender.com/courses/${courseid}`,
+          `http://127.0.0.1:5000/courses/${courseid}`,
           { headers }
         );
         if (!courseRes.ok) throw new Error("Course not found");
         const courseData = await courseRes.json();
 
         const modulesRes = await fetch(
-          `https://cs3028.onrender.com/courses/${courseid}/modules`,
+          `http://127.0.0.1:5000/courses/${courseid}/modules`,
           { headers }
         );
         if (!modulesRes.ok) throw new Error("Modules not found");

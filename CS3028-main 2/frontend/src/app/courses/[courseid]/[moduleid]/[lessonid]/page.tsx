@@ -49,7 +49,7 @@ export default function LessonPage() {
     const fetchAll = async () => {
       try {
         const lessonRes = await fetch(
-          `https://cs3028.onrender.com/lessons/${lessonId}`,
+          `http://127.0.0.1:5000/lessons/${lessonId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -59,7 +59,7 @@ export default function LessonPage() {
         setLesson(lessonData);
 
         const quizRes = await fetch(
-          `https://cs3028.onrender.com/lessons/${lessonId}/quizzes`,
+          `http://127.0.0.1:5000/lessons/${lessonId}/quizzes`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -108,7 +108,7 @@ export default function LessonPage() {
     if (!allCorrect) return;
 
     await fetch(
-      `https://cs3028.onrender.com/lessons/${lessonId}/progress`,
+      `http://127.0.0.1:5000/lessons/${lessonId}/progress`,
       {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },

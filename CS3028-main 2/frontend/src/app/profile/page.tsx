@@ -45,7 +45,7 @@ export default function ProfilePage() {
       try {
         // 1) User profile
         const profileRes = await fetch(
-          'https://cs3028.onrender.com/api/user/profile',
+          'http://127.0.0.1:5000/api/user/profile',
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -61,7 +61,7 @@ export default function ProfilePage() {
         setProfile(profileData);
 
         // 2) Courses (for now, treat all as "current courses")
-        const coursesRes = await fetch('https://cs3028.onrender.com/courses', {
+        const coursesRes = await fetch('http://127.0.0.1:5000/courses', {
           headers: {
             Authorization: `Bearer ${token}`,
           },

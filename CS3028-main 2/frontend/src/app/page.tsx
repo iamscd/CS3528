@@ -18,7 +18,7 @@ export default function Home() {
       const token = localStorage.getItem('access_token');
 
       try {
-        const res = await fetch('https://cs3028.onrender.com/courses', {
+        const res = await fetch('http://127.0.0.1:5000/courses', {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
 

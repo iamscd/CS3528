@@ -46,7 +46,7 @@ export default function ModulePage() {
     const fetchData = async () => {
       try {
         const moduleRes = await fetch(
-          `https://cs3028.onrender.com/modules/${moduleid}`,
+          `http://127.0.0.1:5000/modules/${moduleid}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -65,7 +65,7 @@ export default function ModulePage() {
         const moduleData = await moduleRes.json();
 
         const lessonsRes = await fetch(
-          `https://cs3028.onrender.com/modules/${moduleid}/lessons`,
+          `http://127.0.0.1:5000/modules/${moduleid}/lessons`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

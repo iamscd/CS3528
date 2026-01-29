@@ -25,7 +25,7 @@ export default function CoursesPage() {
         if (token) headers["Authorization"] = `Bearer ${token}`;
 
         // ✅ API URL from FIRST component
-        const res = await fetch("https://cs3028.onrender.com/courses", { headers });
+        const res = await fetch("http://127.0.0.1:5000/courses", { headers });
         if (!res.ok) throw new Error("Failed to fetch courses");
 
         const data = await res.json();
