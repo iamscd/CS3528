@@ -21,6 +21,7 @@ export default function CoursePage() {
 
   const [course, setCourse] = useState<Course | null>(null);
   const [modules, setModules] = useState<Module[]>([]);
+  const [moduleProgress, setModuleProgress] = useState<{ [key: number]: number }>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,6 +49,39 @@ export default function CoursePage() {
 
         setCourse(courseData);
         setModules(modulesData);
+
+        const progressObj: { [key: number]: number } = {};
+
+        await Promise.all(
+          modulesData.map(async (module: Module) => {
+            const lessonsRes = await fetch(
+              `http://127.0.0.1:5000/modules/${module.id}/lessons`,
+              { headers }
+            );
+            const lessonsData = lessonsRes.ok ? await lessonsRes.json() : [];
+
+            if (lessonsData.length === 0) {
+              progressObj[module.id] = 0;
+              return;
+            }
+
+            const progressResults = await Promise.all(
+              lessonsData.map((lesson: any) =>
+                fetch(`http://127.0.0.1:5000/lessons/${lesson.id}/progress`, {
+                  headers,
+                }).then((res) => res.json())
+              )
+            );
+
+            const completedCount = progressResults.filter(
+              (p) => p.is_completed
+            ).length;
+
+            progressObj[module.id] = completedCount / lessonsData.length;
+          })
+        );
+
+        setModuleProgress(progressObj);
       } catch {
         setCourse(null);
         setModules([]);
@@ -59,7 +93,6 @@ export default function CoursePage() {
     fetchData();
   }, [courseid]);
 
-  // Loading & error states styled to match app
   if (loading) {
     return (
       <main className="min-h-screen flex items-center justify-center px-4">
@@ -82,23 +115,7 @@ export default function CoursePage() {
 
   return (
     <main className="min-h-screen flex justify-center px-4 py-10">
-      <div
-        className="
-          w-full max-w-3xl
-          rounded-3xl
-          shadow-2xl
-          px-6 py-8 md:px-10 md:py-10
-
-          /* LIGHT MODE */
-          bg-gradient-to-b from-fuchsia-50 to-fuchsia-100
-          text-gray-800
-
-          /* DARK MODE */
-          dark:bg-gradient-to-b dark:from-purple-900 dark:to-fuchsia-900
-          dark:text-fuchsia-100
-        "
-      >
-        {/* Course Header */}
+      <div className="w-full max-w-3xl rounded-3xl shadow-2xl px-6 py-8 md:px-10 md:py-10 bg-gradient-to-b from-fuchsia-50 to-fuchsia-100 text-gray-800 dark:bg-gradient-to-b dark:from-purple-900 dark:to-fuchsia-900 dark:text-fuchsia-100">
         <header className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-fuchsia-700 dark:text-fuchsia-100 mb-3">
             {course.title}
@@ -108,7 +125,6 @@ export default function CoursePage() {
           </p>
         </header>
 
-        {/* Modules Section */}
         <section>
           <h2 className="text-2xl font-semibold text-fuchsia-700 dark:text-fuchsia-100 mb-4">
             Modules
@@ -120,33 +136,50 @@ export default function CoursePage() {
             </p>
           ) : (
             <ul className="space-y-4">
-              {modules.map((module) => (
-                <li key={module.id}>
-                  <Link
-                    href={`/courses/${courseid}/${module.id}`}
-                    className="
-                      block p-4 rounded-2xl transition
+              {modules.map((module) => {
+                const progress = moduleProgress[module.id] || 0;
+                const completed = progress === 1;
 
-                      /* LIGHT MODE */
-                      bg-white shadow-sm hover:shadow-md hover:scale-[1.01]
+                return (
+                  <li key={module.id}>
+                    <Link
+                      href={`/courses/${courseid}/${module.id}`}
+                      className={`block p-4 rounded-2xl transition shadow-sm hover:shadow-md hover:scale-[1.01] ${
+                        completed
+                          ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400"
+                          : "bg-white dark:bg-white/5 dark:text-fuchsia-50 text-fuchsia-700"
+                      }`}
+                    >
+                      <h3 className="font-semibold mb-1">{module.title}</h3>
+                      <p className="text-sm mb-2">{module.description}</p>
 
-                      /* DARK MODE */
-                      dark:bg-white/5 dark:border dark:border-white/10
-                      dark:hover:bg-white/10
-                    "
-                  >
-                    <h3 className="font-semibold text-fuchsia-700 dark:text-fuchsia-50 mb-1">
-                      {module.title}
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-fuchsia-100/80">
-                      {module.description}
-                    </p>
-                  </Link>
-                </li>
-              ))}
+                      <div className="w-full h-3 bg-gray-300 rounded-full dark:bg-white/20">
+                        <div
+                          className={`h-3 rounded-full transition-all ${
+                            completed ? "bg-green-500" : "bg-fuchsia-500"
+                          }`}
+                          style={{ width: `${progress * 100}%` }}
+                        />
+                      </div>
+                      <p className="text-xs mt-1 text-gray-700 dark:text-fuchsia-100/80">
+                        {Math.round(progress * 100)}% Completed
+                      </p>
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>
+
+        <div className="mt-6 flex flex-wrap gap-3">
+          <button
+            onClick={() => history.back()}
+            className="px-4 py-2 rounded-lg text-sm font-medium border border-fuchsia-300 text-fuchsia-700 bg-white/70 hover:bg-white transition dark:bg-transparent dark:border-fuchsia-200 dark:text-fuchsia-100 dark:hover:bg-white/5"
+          >
+            Back
+          </button>
+        </div>
       </div>
     </main>
   );

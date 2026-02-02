@@ -50,19 +50,24 @@ export default function LessonPage() {
       try {
         const lessonRes = await fetch(
           `http://127.0.0.1:5000/lessons/${lessonId}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         if (!lessonRes.ok) throw new Error("Lesson not found");
         const lessonData = await lessonRes.json();
         setLesson(lessonData);
 
+        const progressRes = await fetch(
+          `http://127.0.0.1:5000/lessons/${lessonId}/progress`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (progressRes.ok) {
+          const progressData = await progressRes.json();
+          if (progressData.is_completed) setPassed(true);
+        }
+
         const quizRes = await fetch(
           `http://127.0.0.1:5000/lessons/${lessonId}/quizzes`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         if (!quizRes.ok) {
           setQuizzes([]);
@@ -72,9 +77,7 @@ export default function LessonPage() {
         const rawQuizzes = await quizRes.json();
         const parsedQuizzes = rawQuizzes.map((q: any) => ({
           ...q,
-          options: Array.isArray(q.options)
-            ? q.options
-            : JSON.parse(q.options),
+          options: Array.isArray(q.options) ? q.options : JSON.parse(q.options),
         }));
 
         setQuizzes(parsedQuizzes);
@@ -90,7 +93,7 @@ export default function LessonPage() {
   }, [lessonId, router]);
 
   const selectAnswer = (quizId: number, option: string) => {
-    if (submitted) return;
+    if (submitted || passed) return;
     setAnswers((prev) => ({ ...prev, [quizId]: option }));
   };
 
@@ -104,22 +107,12 @@ export default function LessonPage() {
 
     setSubmitted(true);
     setPassed(allCorrect);
-
     if (!allCorrect) return;
 
-    await fetch(
-      `http://127.0.0.1:5000/lessons/${lessonId}/progress`,
-      {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
-
-    if (courseId && moduleId) {
-      router.push(`/courses/${courseId}/${moduleId}`);
-    } else {
-      router.push("/courses");
-    }
+    await fetch(`http://127.0.0.1:5000/lessons/${lessonId}/progress`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
   };
 
   const tryAgain = () => {
@@ -128,7 +121,6 @@ export default function LessonPage() {
     setPassed(null);
   };
 
-  // Loading & empty states styled to match app
   if (loading) {
     return (
       <main className="min-h-screen flex items-center justify-center px-4">
@@ -151,28 +143,18 @@ export default function LessonPage() {
 
   return (
     <main className="min-h-screen flex justify-center px-4 py-10">
-      <div
-        className="
-          w-full max-w-3xl
-          rounded-3xl
-          shadow-2xl
-          px-6 py-8 md:px-10 md:py-10
+      <div className="w-full max-w-3xl rounded-3xl shadow-2xl px-6 py-8 md:px-10 md:py-10 bg-gradient-to-b from-fuchsia-50 to-fuchsia-100 text-gray-800 dark:bg-gradient-to-b dark:from-purple-900 dark:to-fuchsia-900 dark:text-fuchsia-100">
+        <button
+          onClick={() => router.back()}
+          className="mb-4 px-4 py-2 rounded-lg text-sm font-medium border border-fuchsia-300 text-fuchsia-700 bg-white/70 hover:bg-white transition dark:bg-transparent dark:border-fuchsia-200 dark:text-fuchsia-100 dark:hover:bg-white/5"
+        >
+          ← Back
+        </button>
 
-          /* LIGHT MODE */
-          bg-gradient-to-b from-fuchsia-50 to-fuchsia-100
-          text-gray-800
-
-          /* DARK MODE */
-          dark:bg-gradient-to-b dark:from-purple-900 dark:to-fuchsia-900
-          dark:text-fuchsia-100
-        "
-      >
-        {/* Lesson Header */}
         <header className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-fuchsia-700 dark:text-fuchsia-100 mb-3">
             {lesson.title}
           </h1>
-
           {lesson.content_type === "text" && (
             <div className="prose max-w-none text-gray-800 dark:text-fuchsia-100/90">
               {lesson.text_content}
@@ -180,7 +162,6 @@ export default function LessonPage() {
           )}
         </header>
 
-        {/* Quiz Section */}
         {quizzes.length > 0 && (
           <section className="space-y-6">
             <h2 className="text-2xl font-semibold text-fuchsia-700 dark:text-fuchsia-100">
@@ -190,15 +171,7 @@ export default function LessonPage() {
             {quizzes.map((quiz) => (
               <div
                 key={quiz.id}
-                className="
-                  rounded-2xl p-5 space-y-3
-
-                  /* LIGHT MODE */
-                  bg-white shadow-sm
-
-                  /* DARK MODE */
-                  dark:bg-white/5 dark:border dark:border-white/10
-                "
+                className="rounded-2xl p-5 space-y-3 bg-white shadow-sm dark:bg-white/5 dark:border dark:border-white/10"
               >
                 <p className="font-semibold text-gray-800 dark:text-fuchsia-50">
                   {quiz.question}
@@ -208,36 +181,29 @@ export default function LessonPage() {
                   {quiz.options.map((option, idx) => {
                     const selected = answers[quiz.id] === option;
                     const correct = option === quiz.correct_option;
-                    const show = submitted;
+                    const show = submitted || passed;
 
-                    let baseClasses =
-                      "w-full text-left border rounded-xl px-3 py-2 text-sm cursor-pointer transition";
-                    let stateClasses =
+                    let state =
                       "border-fuchsia-200 bg-white hover:bg-fuchsia-50 text-gray-800";
 
-                    if (show && selected && correct) {
-                      stateClasses =
+                    if (show && selected && correct)
+                      state =
                         "border-green-400 bg-green-100 text-green-900";
-                    } else if (show && selected && !correct) {
-                      stateClasses =
-                        "border-red-400 bg-red-100 text-red-900";
-                    } else if (show && correct) {
-                      stateClasses =
+                    else if (show && selected && !correct)
+                      state = "border-red-400 bg-red-100 text-red-900";
+                    else if (show && correct)
+                      state =
                         "border-green-300 bg-green-50 text-green-900";
-                    } else if (!show && selected) {
-                      stateClasses =
+                    else if (!show && selected)
+                      state =
                         "border-fuchsia-400 bg-fuchsia-50 text-fuchsia-900";
-                    }
-
-                    const darkClasses =
-                      "dark:border-white/20 dark:text-fuchsia-50 dark:bg-transparent dark:hover:bg-white/10";
 
                     return (
                       <button
                         key={idx}
                         type="button"
                         onClick={() => selectAnswer(quiz.id, option)}
-                        className={`${baseClasses} ${stateClasses} ${darkClasses}`}
+                        className={`w-full text-left border rounded-xl px-3 py-2 text-sm cursor-pointer transition ${state} dark:border-white/20 dark:text-fuchsia-50 dark:bg-transparent dark:hover:bg-white/10`}
                       >
                         {option}
                       </button>
@@ -247,19 +213,11 @@ export default function LessonPage() {
               </div>
             ))}
 
-            {/* Actions under quiz */}
-            {!submitted && (
+            {!passed && !submitted && (
               <button
                 onClick={submitQuiz}
-                disabled={
-                  Object.keys(answers).length !== quizzes.length
-                }
-                className={`
-                  px-5 py-2.5 rounded-xl text-sm font-medium
-                  bg-fuchsia-600 text-white hover:bg-fuchsia-700
-                  transition 
-                  disabled:opacity-60 disabled:cursor-not-allowed
-                `}
+                disabled={Object.keys(answers).length !== quizzes.length}
+                className="px-5 py-2.5 rounded-xl text-sm font-medium bg-fuchsia-600 text-white hover:bg-fuchsia-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 Submit
               </button>
@@ -272,18 +230,14 @@ export default function LessonPage() {
                 </p>
                 <button
                   onClick={tryAgain}
-                  className="
-                    px-4 py-2 rounded-xl text-sm font-medium
-                    bg-yellow-500 text-white hover:bg-yellow-600
-                    transition
-                  "
+                  className="px-4 py-2 rounded-xl text-sm font-medium bg-yellow-500 text-white hover:bg-yellow-600 transition"
                 >
                   Try Again
                 </button>
               </div>
             )}
 
-            {submitted && passed === true && (
+            {passed && (
               <p className="text-green-600 dark:text-green-400 font-semibold mt-2">
                 Lesson completed successfully.
               </p>

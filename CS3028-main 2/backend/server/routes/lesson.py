@@ -70,26 +70,32 @@ def create_lesson():
 
     return flask.jsonify({"message": "Lesson created", "lesson_id": lesson.id}), 200
 
-
-# POST mark lesson complete (member only)
-@blueprint.route("/lessons/<int:lesson_id>/progress", methods=["POST"])
+# GET or POST lesson progress
+@blueprint.route("/lessons/<int:lesson_id>/progress", methods=["GET", "POST"])
 @flask_jwt_extended.jwt_required()
-def mark_lesson_complete(lesson_id):
+def lesson_progress(lesson_id):
     user_id = flask_jwt_extended.get_jwt_identity()  # current user
     lesson = Lesson.query.get(lesson_id)
     if not lesson:
         return flask.jsonify({"error": "Lesson not found"}), 404
 
+    if flask.request.method == "POST":
+        progress = LessonProgress.query.filter_by(
+            user_id=user_id, lesson_id=lesson_id
+        ).first()
+        if not progress:
+            progress = LessonProgress(
+                user_id=user_id, lesson_id=lesson_id, is_completed=True
+            )
+            server.extensions.database.session.add(progress)
+        else:
+            progress.is_completed = True
+
+        server.extensions.database.session.commit()
+        return flask.jsonify({"is_completed": True}), 200
+
+    # GET request: check if lesson completed
     progress = LessonProgress.query.filter_by(
         user_id=user_id, lesson_id=lesson_id
     ).first()
-    if not progress:
-        progress = LessonProgress(
-            user_id=user_id, lesson_id=lesson_id, is_completed=True
-        )
-        server.extensions.database.session.add(progress)
-    else:
-        progress.is_completed = True
-
-    server.extensions.database.session.commit()
-    return flask.jsonify({"is_completed": True}), 200
+    return flask.jsonify({"is_completed": bool(progress)}), 200
