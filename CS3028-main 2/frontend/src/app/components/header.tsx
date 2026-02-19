@@ -55,8 +55,8 @@ export default function Header() {
   }, [open]);
 
   return (
-    <header className="bg-white shadow-md">
-      <nav className="container mx-auto flex justify-between items-center px-4 py-3 relative">
+    <header className="bg-[#efefef] shadow-[inset_0px_-3px_4px_rgba(0,0,0,0.2)]">
+      <nav className="container mx-auto flex justify-between items-center px-4 py-6 relative">
         {/* Logo */}
         <Link href="/" className="flex items-center">
           <Image
