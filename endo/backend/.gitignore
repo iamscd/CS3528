@@ -1,0 +1,10 @@
+#environment files
+.env*
+instance/
+
+#cache
+__pycache__/
+*.pyc
+
+#database
+*.db
