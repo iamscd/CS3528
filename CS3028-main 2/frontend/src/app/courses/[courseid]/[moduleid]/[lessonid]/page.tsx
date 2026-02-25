@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import SoftSidebar from "@/app/components/SoftSidebar";
 
 interface Quiz {
   id: number;
@@ -18,6 +19,11 @@ interface Lesson {
   module_id?: number;
 }
 
+interface Course {
+  id: number;
+  title: string;
+}
+
 export default function LessonPage() {
   const params = useParams();
   const router = useRouter();
@@ -25,9 +31,11 @@ export default function LessonPage() {
   const lessonId = Array.isArray(params.lessonid)
     ? params.lessonid[0]
     : params.lessonid;
+
   const courseId = Array.isArray(params.courseid)
     ? params.courseid[0]
     : params.courseid;
+
   const moduleId = Array.isArray(params.moduleid)
     ? params.moduleid[0]
     : params.moduleid;
@@ -39,15 +47,44 @@ export default function LessonPage() {
   const [passed, setPassed] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [moduleLessons, setModuleLessons] = useState<Lesson[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
+
+  /* ================= Fetch sidebar courses ================= */
   useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+
+    const fetchCourses = async () => {
+      try {
+        const res = await fetch("http://127.0.0.1:5000/courses", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          setCourses(await res.json());
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchCourses();
+  }, []);
+
+  /* ================= Fetch lesson + quizzes + module lessons ================= */
+  useEffect(() => {
+    if (!lessonId) return;
+
     const token = localStorage.getItem("access_token");
     if (!token) {
       router.push("/login");
       return;
     }
 
-    const fetchAll = async () => {
+    const fetchData = async () => {
+      setLoading(true);
       try {
+        // Lesson
         const lessonRes = await fetch(
           `http://127.0.0.1:5000/lessons/${lessonId}`,
           { headers: { Authorization: `Bearer ${token}` } }
@@ -56,6 +93,33 @@ export default function LessonPage() {
         const lessonData = await lessonRes.json();
         setLesson(lessonData);
 
+        // Quizzes
+        const quizRes = await fetch(
+          `http://127.0.0.1:5000/lessons/${lessonId}/quizzes`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (quizRes.ok) {
+          const raw = await quizRes.json();
+          setQuizzes(
+            raw.map((q: any) => ({
+              ...q,
+              options: Array.isArray(q.options) ? q.options : JSON.parse(q.options),
+            }))
+          );
+        }
+
+        // Module lessons (for sidebar)
+        if (moduleId) {
+          const moduleRes = await fetch(
+            `http://127.0.0.1:5000/modules/${moduleId}/lessons`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          if (moduleRes.ok) {
+            setModuleLessons(await moduleRes.json());
+          }
+        }
+
+        // Progress
         const progressRes = await fetch(
           `http://127.0.0.1:5000/lessons/${lessonId}/progress`,
           { headers: { Authorization: `Bearer ${token}` } }
@@ -64,34 +128,17 @@ export default function LessonPage() {
           const progressData = await progressRes.json();
           if (progressData.is_completed) setPassed(true);
         }
-
-        const quizRes = await fetch(
-          `http://127.0.0.1:5000/lessons/${lessonId}/quizzes`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        if (!quizRes.ok) {
-          setQuizzes([]);
-          return;
-        }
-
-        const rawQuizzes = await quizRes.json();
-        const parsedQuizzes = rawQuizzes.map((q: any) => ({
-          ...q,
-          options: Array.isArray(q.options) ? q.options : JSON.parse(q.options),
-        }));
-
-        setQuizzes(parsedQuizzes);
       } catch {
         setLesson(null);
-        setQuizzes([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAll();
-  }, [lessonId, router]);
+    fetchData();
+  }, [lessonId, moduleId, router]);
 
+  /* ================= Quiz functions ================= */
   const selectAnswer = (quizId: number, option: string) => {
     if (submitted || passed) return;
     setAnswers((prev) => ({ ...prev, [quizId]: option }));
@@ -101,18 +148,16 @@ export default function LessonPage() {
     const token = localStorage.getItem("access_token");
     if (!token || !lesson) return;
 
-    const allCorrect = quizzes.every(
-      (q) => answers[q.id] === q.correct_option
-    );
-
+    const allCorrect = quizzes.every((q) => answers[q.id] === q.correct_option);
     setSubmitted(true);
     setPassed(allCorrect);
-    if (!allCorrect) return;
 
-    await fetch(`http://127.0.0.1:5000/lessons/${lessonId}/progress`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    if (allCorrect) {
+      await fetch(`http://127.0.0.1:5000/lessons/${lessonId}/progress`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    }
   };
 
   const tryAgain = () => {
@@ -121,129 +166,128 @@ export default function LessonPage() {
     setPassed(null);
   };
 
+  /* ================= Loading / Error ================= */
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center px-4">
-        <p className="text-gray-600 dark:text-fuchsia-100/80 text-center">
-          Loading...
-        </p>
+      <main className="min-h-screen flex items-center justify-center bg-[#efefef]">
+        <p className="text-gray-600">Loading...</p>
       </main>
     );
   }
 
   if (!lesson) {
     return (
-      <main className="min-h-screen flex items-center justify-center px-4">
-        <p className="text-gray-600 dark:text-fuchsia-100/80 text-center">
-          Lesson not found.
-        </p>
+      <main className="min-h-screen flex items-center justify-center bg-[#efefef]">
+        <p className="text-gray-600">Lesson not found.</p>
       </main>
     );
   }
 
-  return (
-    <main className="min-h-screen flex justify-center px-4 py-10">
-      <div className="w-full max-w-3xl rounded-3xl shadow-2xl px-6 py-8 md:px-10 md:py-10 bg-gradient-to-b from-fuchsia-50 to-fuchsia-100 text-gray-800 dark:bg-gradient-to-b dark:from-purple-900 dark:to-fuchsia-900 dark:text-fuchsia-100">
-        <button
-          onClick={() => router.back()}
-          className="mb-4 px-4 py-2 rounded-lg text-sm font-medium border border-fuchsia-300 text-fuchsia-700 bg-white/70 hover:bg-white transition dark:bg-transparent dark:border-fuchsia-200 dark:text-fuchsia-100 dark:hover:bg-white/5"
-        >
-          ← Back
-        </button>
+  /* ================= Sidebar items ================= */
+  const sidebarItems = moduleLessons.length > 0
+    ? moduleLessons.map((l) => ({
+        label: l.title,
+        href: `/courses/${courseId}/${moduleId}/${l.id}`,
+        disabled: l.id === lesson.id,
+      }))
+    : courses.map((c) => ({ label: c.title, href: `/courses/${c.id}` }));
 
-        <header className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-fuchsia-700 dark:text-fuchsia-100 mb-3">
-            {lesson.title}
-          </h1>
-          {lesson.content_type === "text" && (
-            <div className="prose max-w-none text-gray-800 dark:text-fuchsia-100/90">
-              {lesson.text_content}
+  /* ================= Render ================= */
+  return (
+    <main className="min-h-screen bg-[#efefef] px-6 md:px-10 py-10">
+      <div className="max-w-7xl mx-auto flex gap-6">
+        {/* Sidebar */}
+        <SoftSidebar
+          items={sidebarItems}
+          header="Lessons"
+          headerHref={`/courses/${courseId}`}
+          className="flex-shrink-0"
+        />
+
+        {/* Lesson Content */}
+        <div className="flex-1 flex flex-col gap-6">
+          {/* ===== Lesson Box ===== */}
+          <div className="rounded-3xl p-6 md:p-10 bg-[#efefef] shadow-[-12px_12px_24px_rgba(0,0,0,0.2),12px_-12px_24px_rgba(255,255,255,0.9)]">
+            <button
+              onClick={() => router.back()}
+              className="mb-6 px-4 py-2 rounded-xl text-sm font-medium text-fuchsia-700 bg-[#efefef] shadow-[inset_-2px_-2px_4px_rgba(255,255,255,0.8),inset_2px_2px_4px_rgba(0,0,0,0.15)]"
+            >
+              ← Back
+            </button>
+
+            <header>
+              <h1 className="text-3xl md:text-4xl font-bold text-fuchsia-700 mb-4">
+                {lesson.title}
+              </h1>
+              {lesson.content_type === "text" && (
+                <div className="prose max-w-none text-gray-800">
+                  {lesson.text_content}
+                </div>
+              )}
+            </header>
+          </div>
+
+          {/* ===== Quiz Box ===== */}
+          {quizzes.length > 0 && (
+            <div className="rounded-3xl p-6 md:p-10 bg-[#efefef] shadow-[-12px_12px_24px_rgba(0,0,0,0.2),12px_-12px_24px_rgba(255,255,255,0.9)]">
+              <h2 className="text-2xl font-semibold text-fuchsia-700 mb-4">
+                Quiz
+              </h2>
+
+              {quizzes.map((quiz) => (
+                <div key={quiz.id} className="rounded-2xl p-5 space-y-3 bg-[#efefef] shadow-[inset_-3px_-3px_6px_rgba(255,255,255,0.8),inset_3px_3px_6px_rgba(0,0,0,0.15)]">
+                  <p className="font-semibold text-gray-800">{quiz.question}</p>
+                  <div className="space-y-2">
+                    {quiz.options.map((option, idx) => {
+                      const selected = answers[quiz.id] === option;
+                      const correct = option === quiz.correct_option;
+                      const show = submitted || passed;
+
+                      let style = "bg-[#efefef] text-gray-700";
+                      if (show && selected && correct) style = "bg-green-100 text-green-900";
+                      else if (show && selected && !correct) style = "bg-red-100 text-red-900";
+                      else if (!show && selected) style = "bg-fuchsia-100 text-fuchsia-900";
+
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => selectAnswer(quiz.id, option)}
+                          className={`w-full text-left px-3 py-2 rounded-xl text-sm transition shadow-[inset_-2px_-2px_4px_rgba(255,255,255,0.8),inset_2px_2px_4px_rgba(0,0,0,0.15)] ${style}`}
+                        >
+                          {option}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+
+              {!passed && !submitted && (
+                <button
+                  onClick={submitQuiz}
+                  disabled={Object.keys(answers).length !== quizzes.length}
+                  className="px-5 py-2.5 rounded-xl text-sm font-medium text-white bg-fuchsia-600 hover:bg-fuchsia-700 transition disabled:opacity-60"
+                >
+                  Submit
+                </button>
+              )}
+
+              {submitted && passed === false && (
+                <div className="space-y-2 mt-2">
+                  <p className="text-red-600 font-semibold">Some answers are incorrect.</p>
+                  <button
+                    onClick={tryAgain}
+                    className="px-4 py-2 rounded-xl text-sm font-medium text-white bg-yellow-500 hover:bg-yellow-600 transition"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              )}
+
+              {passed && <p className="text-green-600 font-semibold mt-2">Lesson completed successfully.</p>}
             </div>
           )}
-        </header>
-
-        {quizzes.length > 0 && (
-          <section className="space-y-6">
-            <h2 className="text-2xl font-semibold text-fuchsia-700 dark:text-fuchsia-100">
-              Quiz
-            </h2>
-
-            {quizzes.map((quiz) => (
-              <div
-                key={quiz.id}
-                className="rounded-2xl p-5 space-y-3 bg-white shadow-sm dark:bg-white/5 dark:border dark:border-white/10"
-              >
-                <p className="font-semibold text-gray-800 dark:text-fuchsia-50">
-                  {quiz.question}
-                </p>
-
-                <div className="space-y-2">
-                  {quiz.options.map((option, idx) => {
-                    const selected = answers[quiz.id] === option;
-                    const correct = option === quiz.correct_option;
-                    const show = submitted || passed;
-
-                    let state =
-                      "border-fuchsia-200 bg-white hover:bg-fuchsia-50 text-gray-800";
-
-                    if (show && selected && correct)
-                      state =
-                        "border-green-400 bg-green-100 text-green-900";
-                    else if (show && selected && !correct)
-                      state = "border-red-400 bg-red-100 text-red-900";
-                    else if (show && correct)
-                      state =
-                        "border-green-300 bg-green-50 text-green-900";
-                    else if (!show && selected)
-                      state =
-                        "border-fuchsia-400 bg-fuchsia-50 text-fuchsia-900";
-
-                    return (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => selectAnswer(quiz.id, option)}
-                        className={`w-full text-left border rounded-xl px-3 py-2 text-sm cursor-pointer transition ${state} dark:border-white/20 dark:text-fuchsia-50 dark:bg-transparent dark:hover:bg-white/10`}
-                      >
-                        {option}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-
-            {!passed && !submitted && (
-              <button
-                onClick={submitQuiz}
-                disabled={Object.keys(answers).length !== quizzes.length}
-                className="px-5 py-2.5 rounded-xl text-sm font-medium bg-fuchsia-600 text-white hover:bg-fuchsia-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                Submit
-              </button>
-            )}
-
-            {submitted && passed === false && (
-              <div className="mt-2 space-y-2">
-                <p className="text-red-600 dark:text-red-400 font-semibold">
-                  Some answers are incorrect. Try again.
-                </p>
-                <button
-                  onClick={tryAgain}
-                  className="px-4 py-2 rounded-xl text-sm font-medium bg-yellow-500 text-white hover:bg-yellow-600 transition"
-                >
-                  Try Again
-                </button>
-              </div>
-            )}
-
-            {passed && (
-              <p className="text-green-600 dark:text-green-400 font-semibold mt-2">
-                Lesson completed successfully.
-              </p>
-            )}
-          </section>
-        )}
+        </div>
       </div>
     </main>
   );

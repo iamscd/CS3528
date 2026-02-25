@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import SoftCourse from "@/app/components/SoftCourse";
+import SoftList from "@/app/components/SoftList";
 import SoftButton from "@/app/components/SoftButton";
 
 interface Course {
@@ -47,9 +47,7 @@ export default function CoursesPage() {
 
         setCourses(mapped);
 
-        const newProgress: {
-          [key: number]: CourseModuleProgress;
-        } = {};
+        const newProgress: { [key: number]: CourseModuleProgress } = {};
 
         await Promise.all(
           mapped.map(async (course) => {
@@ -69,8 +67,7 @@ export default function CoursesPage() {
               );
 
               const lessons = lessonsRes.ok ? await lessonsRes.json() : [];
-
-              if (lessons.length === 0) continue;
+              if (!lessons.length) continue;
 
               const progressChecks = await Promise.all(
                 lessons.map((lesson: any) =>
@@ -81,11 +78,9 @@ export default function CoursesPage() {
                 )
               );
 
-              const allCompleted = progressChecks.every(
-                (p) => p.is_completed
-              );
-
-              if (allCompleted) completedModules++;
+              if (progressChecks.every((p) => p.is_completed)) {
+                completedModules++;
+              }
             }
 
             newProgress[course.course_id] = {
@@ -114,10 +109,45 @@ export default function CoursesPage() {
     );
   }
 
+  // Build list items for SoftList
+  const listItems = [
+    ...courses.map((course) => {
+      const progress = progressMap[course.course_id] || {
+        totalModules: 0,
+        completedModules: 0,
+      };
+
+      return {
+        type: "catalogue" as const,
+        courseId: course.course_id,
+        title: course.title,
+        description: course.description,
+        totalModules: progress.totalModules,
+        completedModules: progress.completedModules,
+        isCreateCard: false,
+        isLoggedIn,
+      };
+    }),
+  ];
+
+  // Add admin “Create Course” as a card at the end
+  if (role === "admin") {
+    listItems.push({
+      type: "catalogue" as const,
+      courseId: -1, // fake id
+      title: "Create New Course",
+      description: "Add a new course to the catalogue",
+      totalModules: 0,
+      completedModules: 0,
+      isLoggedIn: true, // always clickable
+      // special flag so SoftCatalogue knows it’s the create button
+      isCreateCard: true,
+    } as any);
+  }
+
   return (
     <main className="min-h-screen bg-[#efefef] px-6 md:px-10 py-10">
       <div className="max-w-7xl mx-auto">
-
         {/* Page Header */}
         <header className="mb-10">
           <h1 className="text-3xl md:text-4xl font-bold text-fuchsia-700 mb-3">
@@ -128,46 +158,8 @@ export default function CoursesPage() {
           </p>
         </header>
 
-        {/* Courses Grid */}
-        <section className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {courses.map((course) => {
-            const progress = progressMap[course.course_id] || {
-              totalModules: 0,
-              completedModules: 0,
-            };
-
-            return (
-              <SoftCourse
-                key={course.course_id}
-                courseId={course.course_id}
-                title={course.title}
-                description={course.description}
-                totalModules={progress.totalModules}
-                completedModules={progress.completedModules}
-                isLoggedIn={isLoggedIn}
-              />
-            );
-          })}
-
-          {/* Admin Create Card */}
-          {role === "admin" && (
-            <div
-              className="
-                p-6 rounded-2xl flex flex-col justify-center items-center
-                bg-[#efefef]
-                shadow-[inset_-4px_-4px_8px_rgba(255,255,255,0.8),inset_4px_4px_8px_rgba(0,0,0,0.08)]
-              "
-            >
-              <h3 className="text-lg font-semibold mb-4 text-fuchsia-700">
-                Create New Course
-              </h3>
-
-              <SoftButton href="/createcourse">
-                + Create Course
-              </SoftButton>
-            </div>
-          )}
-        </section>
+        {/* Courses List */}
+        <SoftList variant="list" items={listItems} />
       </div>
     </main>
   );

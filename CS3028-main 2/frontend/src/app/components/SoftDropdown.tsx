@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 
 interface DropdownItem {
-  label: string;
+  label: React.ReactNode;
   href: string;
 }
 
@@ -13,6 +13,40 @@ interface SoftDropdownProps {
   items: DropdownItem[];
   disabled?: boolean;
   maxHeight?: string;
+  totalModules?: number;
+  completedModules?: number;
+  dotSize?: number;
+}
+
+interface ProgressDotsProps {
+  total: number;
+  completed: number;
+  dotSize?: number;
+}
+
+function ProgressDots({ total, completed, dotSize = 12 }: ProgressDotsProps) {
+  if (total <= 0) return null;
+
+  return (
+    <div className="inline-flex items-center gap-1">
+      {Array.from({ length: total }).map((_, i) => {
+        const done = i < completed;
+        return (
+          <span
+            key={i}
+            style={{ width: dotSize, height: dotSize }}
+            className={`
+              flex-shrink-0 rounded-full transition-all
+              ${done
+                ? "bg-[#70cc30] shadow-[inset_1px_1px_2px_rgba(0,0,0,0.25),inset_-1px_-1px_1px_rgba(255,255,255,0.4)]"
+                : "bg-[#e0e0e0] shadow-[inset_-1px_-1px_1px_rgba(255,255,255,0.8),inset_1px_1px_1px_rgba(0,0,0,0.1)]"
+              }
+            `}
+          />
+        );
+      })}
+    </div>
+  );
 }
 
 export default function SoftDropdown({
@@ -20,14 +54,15 @@ export default function SoftDropdown({
   items,
   disabled = false,
   maxHeight,
+  totalModules = 0,
+  completedModules = 0,
+  dotSize = 12,
 }: SoftDropdownProps) {
   const [open, setOpen] = useState(false);
 
   return (
     <div
-      className={`w-full rounded-2xl
-        py-3
-        bg-[#efefef]
+      className={`w-full rounded-2xl py-3 bg-[#efefef]
         shadow-[-10px_10px_16px_rgba(0,0,0,0.2),10px_-10px_16px_rgba(255,255,255,0.9),inset_-1px_1px_1px_rgba(255,255,255,0.8),inset_1px_-1px_1px_rgba(0,0,0,0.1)]
         ${disabled ? "opacity-60 pointer-events-none" : ""}
       `}
@@ -37,14 +72,27 @@ export default function SoftDropdown({
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         className={`w-full flex items-center justify-between px-4 py-3
-          text-sm font-medium text-gray-700
+          text-lg font-medium text-gray-700
           bg-transparent rounded-t-2xl
           focus:outline-none
           transition-shadow duration-500
           active:shadow-[inset_6px_6px_12px_rgba(0,0,0,0.2),inset_-6px_-6px_12px_rgba(255,255,255,0.8)]
         `}
       >
-        <span>{label}</span>
+        <div className="flex items-center gap-2">
+          <span><h1>{label}</h1></span>
+
+          {totalModules > 0 && (
+            <div className="flex items-center gap-2">
+              <ProgressDots total={totalModules} completed={completedModules}
+              />
+              <span className="text-xs text-gray-500">
+                {completedModules}/{totalModules}
+              </span>
+            </div>
+          )}
+        </div>
+
         <span>{open ? "▲" : "▼"}</span>
       </button>
 

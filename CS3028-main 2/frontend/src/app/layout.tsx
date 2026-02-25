@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
-import { DM_Mono } from "next/font/google";
+import { Zalando_Sans_Expanded } from "next/font/google";
 import "./globals.css";
 import Header from "./components/header";
 
-const instrumentSerif = DM_Mono({
+const instrumentSerif = Zalando_Sans_Expanded({
   subsets: ["latin"],
-  weight: ["400"],
+  weight: [
+        "200",
+         ],
   variable: "--font-instrument-serif",
 });
 
