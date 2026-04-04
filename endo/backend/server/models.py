@@ -127,11 +127,23 @@ class LessonProgress(db.Model):
 
 class LessonQuiz(db.Model):
     __tablename__ = "lesson_quizzes"
+
     id = db.Column(db.Integer, primary_key=True)
-    lesson_id = db.Column(db.Integer, db.ForeignKey("lessons.id"), nullable=False)
+
+    lesson_id = db.Column(
+        db.Integer,
+        db.ForeignKey("lessons.id"),
+        nullable=False
+    )
+
     question = db.Column(db.Text, nullable=False)
-    options = db.Column(db.JSON, nullable=False)  # Store options as a JSON array
-    correct_option = db.Column(db.String(1), nullable=False)  # 'A', 'B', 'C', 'D'
+
+    # multiple choice questions
+    options = db.Column(db.JSON, nullable=True)
+    correct_option = db.Column(db.String(1), nullable=True)
+
+    # numeric questions
+    correct_numeric_answer = db.Column(db.Float, nullable=True)
 
     def __repr__(self):
         return f"<LessonQuiz {self.id}>"

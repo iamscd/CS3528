@@ -1,120 +1,136 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
+import SoftList from "@/app/components/SoftList";
 
-interface Module {
-  course_id: number;
+interface Course {
+  id: number;
   title: string;
   description: string;
 }
 
+interface CourseModuleProgress {
+  totalModules: number;
+  completedModules: number;
+}
+
 export default function Home() {
-  const [modules, setModules] = useState<Module[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [progressMap, setProgressMap] = useState<{
+    [key: number]: CourseModuleProgress;
+  }>({});
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchModules = async () => {
-      const token = localStorage.getItem('access_token');
+    const token = localStorage.getItem("access_token");
+    setIsLoggedIn(!!token);
 
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const fetchCourses = async () => {
       try {
-        const res = await fetch('https://cs3028.onrender.com/courses', {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
+        const res = await fetch("http://127.0.0.1:5000/courses", { headers });
+        if (!res.ok) throw new Error("Failed to fetch courses");
 
-        if (!res.ok) {
-          setModules([]);
-        } else {
-          const data = await res.json();
-          const mapped = data.map((c: any) => ({
-            course_id: c.id,
-            title: c.title,
-            description: c.description,
-          }));
-          // keep original logic: only show first 3 courses
-          setModules(mapped.slice(0, 3));
-        }
-      } catch {
-        setModules([]);
+        const data = await res.json();
+        const sliced = data.slice(0, 3);
+
+        setCourses(sliced);
+
+        const newProgress: { [key: number]: CourseModuleProgress } = {};
+
+        await Promise.all(
+          sliced.map(async (course: any) => {
+            const modulesRes = await fetch(
+              `http://127.0.0.1:5000/courses/${course.id}/modules`,
+              { headers }
+            );
+
+            const modules = modulesRes.ok ? await modulesRes.json() : [];
+
+            newProgress[course.id] = {
+              totalModules: modules.length,
+              completedModules: 0, // homepage keeps it simple
+            };
+          })
+        );
+
+        setProgressMap(newProgress);
+      } catch (err) {
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchModules();
+    fetchCourses();
   }, []);
 
+  if (loading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-[#efefef]">
+        <p className="text-gray-600">Loading...</p>
+      </main>
+    );
+  }
+
+  const listItems = courses.map((course) => {
+    const progress = progressMap[course.id] || {
+      totalModules: 0,
+      completedModules: 0,
+    };
+
+    return {
+      type: "catalogue" as const,
+      courseId: course.id,
+      title: course.title,
+      description: course.description,
+      totalModules: progress.totalModules,
+      completedModules: progress.completedModules,
+      isCreateCard: false,
+      isLoggedIn,
+    };
+  });
+
   return (
-    <main
-      className="
-        min-h-screen
-        bg-gradient-to-b from-fuchsia-50 to-fuchsia-100
-        dark:from-fuchsia-950 dark:to-fuchsia-900
-        text-gray-800 dark:text-gray-100
-        rounded-3xl
-      "
-    >
-      {/* Hero */}
-      <section className="flex flex-col items-center justify-center text-center px-6 py-20">
-        <h2 className="text-4xl md:text-6xl font-bold text-fuchsia-700 dark:text-fuchsia-400 mb-4 leading-tight">
-          <span className="block">Empowering Education</span>
-          <span className="block">for Endometriosis Awareness</span>
-        </h2>
+    <main className="min-h-screen bg-[#efefef] px-6 md:px-10 py-10">
+      <div className="max-w-7xl mx-auto space-y-16">
 
-        <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mb-8">
-          Learn about endometriosis, understand your body, and connect with a supportive community.
-        </p>
-        {/* link kept from the FIRST component */}
-        <Link
-          href="/courses"
-          className="px-6 py-3 bg-fuchsia-600 text-white rounded-xl hover:bg-fuchsia-700 transition"
+        {/* ===== Hero Section (Soft Style) ===== */}
+        <section
+          className="
+            rounded-3xl p-10 bg-[#efefef]
+            shadow-[-12px_12px_24px_rgba(0,0,0,0.2),12px_-12px_24px_rgba(255,255,255,0.9)]
+            text-center
+          "
         >
-          Start Learning
-        </Link>
-      </section>
+          <h1 className="text-4xl md:text-5xl font-bold text-fuchsia-700 mb-4">
+            Empowering Education for Endometriosis Awareness
+          </h1>
 
-      {/* Courses */}
-      <section id="learn" className="px-6 py-16">
-        <h3 className="text-3xl font-semibold text-center text-fuchsia-700 dark:text-fuchsia-400 mb-10">
-          Explore Our Courses
-        </h3>
+          <p className="text-gray-700 max-w-2xl mx-auto text-base md:text-lg">
+            Learn about endometriosis, understand your body,
+            and explore interactive courses designed to support and inform.
+          </p>
+        </section>
 
-        {loading ? (
-          <p className="text-center text-gray-600 dark:text-gray-300">
-            Loading courses...
-          </p>
-        ) : modules.length === 0 ? (
-          <p className="text-center text-gray-600 dark:text-gray-300">
-            No courses available.
-          </p>
-        ) : (
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {modules.map((module) => (
-              // link kept from the FIRST component
-              <Link
-                key={module.course_id}
-                href={`/courses/${module.course_id}`}
-                className="
-                  p-6
-                  bg-fuchsia-50 dark:bg-fuchsia-950/60
-                  rounded-2xl
-                  shadow-sm
-                  hover:shadow-md hover:scale-[1.02]
-                  transition
-                  block
-                "
-              >
-                <h4 className="text-xl font-semibold text-fuchsia-700 dark:text-fuchsia-300 mb-2">
-                  {module.title}
-                </h4>
-                <p className="text-gray-600 dark:text-gray-300">
-                  {module.description}
-                </p>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
+        {/* ===== Courses Section ===== */}
+        <section>
+          <header className="mb-10">
+            <h2 className="text-3xl md:text-4xl font-bold text-fuchsia-700 mb-3">
+              Featured Courses
+            </h2>
+            <p className="text-gray-700 text-sm md:text-base max-w-2xl">
+              Start with one of our most popular learning paths.
+            </p>
+          </header>
+
+          <SoftList variant="catalogue" items={listItems} />
+        </section>
+
+      </div>
     </main>
   );
 }

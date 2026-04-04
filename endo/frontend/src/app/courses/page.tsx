@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import SoftList from "@/app/components/SoftList";
+import SoftButton from "@/app/components/SoftButton";
 
 interface Course {
   course_id: number;
@@ -9,141 +10,156 @@ interface Course {
   description: string;
 }
 
+interface CourseModuleProgress {
+  totalModules: number;
+  completedModules: number;
+}
+
 export default function CoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
+  const [progressMap, setProgressMap] = useState<{
+    [key: number]: CourseModuleProgress;
+  }>({});
   const [role, setRole] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     setIsLoggedIn(!!token);
     setRole(localStorage.getItem("role"));
 
-    const fetchCourses = async () => {
-      try {
-        const headers: Record<string, string> = {};
-        if (token) headers["Authorization"] = `Bearer ${token}`;
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
 
-        // ✅ API URL from FIRST component
-        const res = await fetch("https://cs3028.onrender.com/courses", { headers });
+    const fetchCoursesAndProgress = async () => {
+      try {
+        const res = await fetch("http://127.0.0.1:5000/courses", { headers });
         if (!res.ok) throw new Error("Failed to fetch courses");
 
         const data = await res.json();
-        const mapped = data.map((c: any) => ({
+
+        const mapped: Course[] = data.map((c: any) => ({
           course_id: c.id,
           title: c.title,
           description: c.description,
         }));
+
         setCourses(mapped);
-        console.table(data);
+
+        const newProgress: { [key: number]: CourseModuleProgress } = {};
+
+        await Promise.all(
+          mapped.map(async (course) => {
+            const modulesRes = await fetch(
+              `http://127.0.0.1:5000/courses/${course.course_id}/modules`,
+              { headers }
+            );
+
+            const modules = modulesRes.ok ? await modulesRes.json() : [];
+
+            let completedModules = 0;
+
+            for (const module of modules) {
+              const lessonsRes = await fetch(
+                `http://127.0.0.1:5000/modules/${module.id}/lessons`,
+                { headers }
+              );
+
+              const lessons = lessonsRes.ok ? await lessonsRes.json() : [];
+              if (!lessons.length) continue;
+
+              const progressChecks = await Promise.all(
+                lessons.map((lesson: any) =>
+                  fetch(
+                    `http://127.0.0.1:5000/lessons/${lesson.id}/progress`,
+                    { headers }
+                  ).then((r) => r.json())
+                )
+              );
+
+              if (progressChecks.every((p) => p.is_completed)) {
+                completedModules++;
+              }
+            }
+
+            newProgress[course.course_id] = {
+              totalModules: modules.length,
+              completedModules,
+            };
+          })
+        );
+
+        setProgressMap(newProgress);
       } catch (err) {
         console.error(err);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchCourses();
+    fetchCoursesAndProgress();
   }, []);
 
+  if (loading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-[#efefef]">
+        <p className="text-gray-600">Loading...</p>
+      </main>
+    );
+  }
+
+  // Build list items for SoftList
+  const listItems = [
+    ...courses.map((course) => {
+      const progress = progressMap[course.course_id] || {
+        totalModules: 0,
+        completedModules: 0,
+      };
+
+      return {
+        type: "catalogue" as const,
+        courseId: course.course_id,
+        title: course.title,
+        description: course.description,
+        totalModules: progress.totalModules,
+        completedModules: progress.completedModules,
+        isCreateCard: false,
+        isLoggedIn,
+      };
+    }),
+  ];
+
+  // Add admin “Create Course” as a card at the end
+  if (role === "admin") {
+    listItems.push({
+      type: "catalogue" as const,
+      courseId: -1, // fake id
+      title: "Create New Course",
+      description: "Add a new course to the catalogue",
+      totalModules: 0,
+      completedModules: 0,
+      isLoggedIn: true, // always clickable
+      // special flag so SoftCatalogue knows it’s the create button
+      isCreateCard: true,
+    } as any);
+  }
+
   return (
-    <main className="min-h-screen flex justify-center px-4 py-10">
-      <div
-        className="
-          w-full max-w-6xl
-          rounded-3xl
-          shadow-2xl
-          px-6 py-10 md:px-12 md:py-14
-
-          /* LIGHT MODE */
-          bg-gradient-to-b from-fuchsia-50 to-fuchsia-100
-          text-gray-800
-
-          /* DARK MODE */
-          dark:bg-gradient-to-b dark:from-purple-900 dark:to-fuchsia-900
-          dark:text-fuchsia-100
-        "
-      >
-        {/* Header (text from FIRST, styling from SECOND) */}
-        <section className="text-center mb-10">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-fuchsia-700 dark:text-fuchsia-200">
+    <main className="min-h-screen bg-[#efefef] px-6 md:px-10 py-10">
+      <div className="max-w-7xl mx-auto">
+        {/* Page Header */}
+        <header className="mb-10">
+          <h1 className="text-3xl md:text-4xl font-bold text-fuchsia-700 mb-3">
             Browse Courses
-          </h2>
-          <p className="text-sm md:text-base text-gray-600 dark:text-fuchsia-100/80 max-w-2xl mx-auto">
-            Explore a series of interactive lessons designed to help you
-            understand and manage endometriosis at your own pace.
+          </h1>
+          <p className="text-gray-700 text-sm md:text-base max-w-2xl">
+            Explore interactive lessons at your own pace.
           </p>
-        </section>
+        </header>
 
-        {/* Courses Grid */}
-        <section className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-          {courses.length === 0 && (
-            <p className="col-span-full text-center text-gray-500 dark:text-fuchsia-100/80">
-              Loading courses...
-            </p>
-          )}
-
-          {courses.map((course, index) => (
-            <div
-              key={`${course.course_id}-${index}`}
-              className="
-                p-5 rounded-2xl flex flex-col justify-between transition hover:scale-[1.02]
-
-                /* LIGHT MODE */
-                bg-white shadow-sm hover:shadow-md
-
-                /* DARK MODE */
-                dark:bg-white/5 dark:border dark:border-white/10
-                dark:hover:bg-white/10
-              "
-            >
-              <div>
-                <h3 className="text-lg font-semibold mb-2 text-fuchsia-700 dark:text-fuchsia-50">
-                  {course.title}
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-fuchsia-100/90 mb-4">
-                  {course.description}
-                </p>
-              </div>
-
-              {/* ✅ Link + button behavior from FIRST component */}
-              <Link
-                href={`/courses/${course.course_id}`}
-                className={`inline-block text-center px-4 py-2 rounded-lg text-sm font-medium transition ${
-                  isLoggedIn
-                    ? "bg-fuchsia-600 text-white hover:bg-fuchsia-700"
-                    : "bg-gray-400 text-white hover:bg-gray-500"
-                }`}
-              >
-                {isLoggedIn ? "View Course" : "Preview Course"}
-              </Link>
-            </div>
-          ))}
-
-          {/* ✅ Admin Create Card: links/labels from FIRST, styling from SECOND */}
-          {role === "admin" && (
-            <div
-              className="
-                p-5 rounded-2xl flex flex-col justify-center items-center transition hover:scale-[1.02]
-
-                /* LIGHT MODE */
-                bg-fuchsia-100 border-2 border-dashed border-fuchsia-400 hover:bg-fuchsia-200
-
-                /* DARK MODE */
-                dark:bg-white/5 dark:border-fuchsia-300
-                dark:hover:bg-white/10
-              "
-            >
-              <h3 className="text-lg font-semibold mb-2 text-fuchsia-700 dark:text-fuchsia-50">
-                Create New Course
-              </h3>
-              <Link
-                href="/createcourse"
-                className="inline-block text-center px-4 py-2 mt-1 rounded-lg bg-fuchsia-600 text-white text-sm font-medium hover:bg-fuchsia-700 transition"
-              >
-                + Create Course
-              </Link>
-            </div>
-          )}
-        </section>
+        {/* Courses List */}
+        <SoftList variant="list" items={listItems} />
       </div>
     </main>
   );

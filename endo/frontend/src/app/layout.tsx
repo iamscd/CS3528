@@ -1,6 +1,15 @@
 import type { Metadata } from "next";
+import { Zalando_Sans_Expanded } from "next/font/google";
 import "./globals.css";
-import Header from "./components/header"; 
+import Header from "./components/header";
+
+const instrumentSerif = Zalando_Sans_Expanded({
+  subsets: ["latin"],
+  weight: [
+        "200",
+         ],
+  variable: "--font-instrument-serif",
+});
 
 export const metadata: Metadata = {
   title: "Endometriosis Learning Suite",
@@ -13,19 +22,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={instrumentSerif.variable}>
       <body
         className="
-          bg-gradient-to-b from-fuchsia-50 to-fuchsia-100
-          dark:from-fuchsia-800 dark:to-fuchsia-700
+          bg-[#efefef]
           text-gray-800 dark:text-gray-100
+          m-0 min-h-screen
         "
       >
-        <Header />  
 
-        <main className="min-h-screen container mx-auto p-4">
+        <Header />
+        <main className="min-h-screen">
           {children}
         </main>
+        
       </body>
     </html>
   );

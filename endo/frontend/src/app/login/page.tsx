@@ -25,45 +25,29 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
 
-    const API_BASE =
-      process.env.NEXT_PUBLIC_API_BASE_URL || 'https://cs3028.onrender.com';
-
     try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
+      const res = await fetch('http://127.0.0.1:5000/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
-      const contentType = res.headers.get('content-type') || '';
-      const raw = await res.text();
-      const data = contentType.includes('application/json')
-        ? JSON.parse(raw)
-        : null;
+      const data = await res.json();
 
       if (!res.ok) {
-        const message =
-          data?.message ||
-          `Login failed (${res.status}). Server returned: ${raw
-            .replace(/\s+/g, ' ')
-            .slice(0, 120)}`;
-        throw new Error(message);
+        throw new Error(data.message || 'Login failed');
       }
 
-      const token = data?.access_token;
-      if (!token) {
-        throw new Error('Login succeeded but no access token was returned.');
-      }
-
+      const token = data.access_token;
       localStorage.setItem('access_token', token);
 
       const decoded = decodeJWT(token);
       const role = decoded?.role || 'member';
       localStorage.setItem('role', role);
 
-      router.push('/courses');
+      window.location.href = '/courses';
     } catch (err: any) {
-      setError(err?.message || 'Something went wrong');
+      setError(err.message || 'Something went wrong');
     } finally {
       setLoading(false);
     }
@@ -112,7 +96,7 @@ export default function LoginPage() {
       </form>
 
       <p className="mt-4 text-sm text-center">
-        Don&apos;t have an account?{' '}
+        Don't have an account?{' '}
         <Link href="/signup" className="text-fuchsia-600 hover:underline">
           Sign Up
         </Link>
