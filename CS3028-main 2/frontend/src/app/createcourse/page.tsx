@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import SoftButton from "@/app/components/SoftButton";
-import SoftDropdown from "@/app/components/SoftDropdown";
 
 interface Quiz {
   id: number;
   question: string;
+  type: "multiple_choice" | "numeric";
   options: string[];
   correctAnswer: string;
+  correctNumericAnswer: number | null;
 }
 
 interface Lesson {
@@ -29,19 +29,21 @@ interface Module {
 
 export default function ModuleCreatorPage() {
   const router = useRouter();
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [modules, setModules] = useState<Module[]>([]);
+
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [token, setToken] = useState<string | null>(null);
 
-  /* ==================== Auth Check ==================== */
   useEffect(() => {
     const storedToken = localStorage.getItem("access_token");
     if (!storedToken) {
       router.push("/login");
       return;
     }
+
     setToken(storedToken);
 
     fetch("http://127.0.0.1:5000/api/user/profile", {
@@ -58,18 +60,30 @@ export default function ModuleCreatorPage() {
       .finally(() => setCheckingAuth(false));
   }, [router]);
 
-  /* ==================== Module & Lesson Handlers ==================== */
   const addModule = () =>
     setModules((prev) => [
       ...prev,
-      { id: Date.now(), title: "", description: "", lessons: [], open: true },
+      {
+        id: Date.now(),
+        title: "",
+        description: "",
+        lessons: [],
+        open: true,
+      },
     ]);
 
   const updateModule = (id: number, key: string, value: any) =>
-    setModules((prev) => prev.map((m) => (m.id === id ? { ...m, [key]: value } : m)));
+    setModules((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, [key]: value } : m))
+    );
 
   const removeModule = (id: number) =>
     setModules((prev) => prev.filter((m) => m.id !== id));
+
+  const toggleModule = (id: number) =>
+    setModules((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, open: !m.open } : m))
+    );
 
   const addLesson = (moduleId: number) =>
     setModules((prev) =>
@@ -77,7 +91,10 @@ export default function ModuleCreatorPage() {
         m.id === moduleId
           ? {
               ...m,
-              lessons: [...m.lessons, { id: Date.now(), title: "", content: "", quiz: [] }],
+              lessons: [
+                ...m.lessons,
+                { id: Date.now(), title: "", content: "", quiz: [] },
+              ],
             }
           : m
       )
@@ -89,7 +106,9 @@ export default function ModuleCreatorPage() {
         m.id === mid
           ? {
               ...m,
-              lessons: m.lessons.map((l) => (l.id === lid ? { ...l, [key]: value } : l)),
+              lessons: m.lessons.map((l) =>
+                l.id === lid ? { ...l, [key]: value } : l
+              ),
             }
           : m
       )
@@ -98,11 +117,12 @@ export default function ModuleCreatorPage() {
   const removeLesson = (mid: number, lid: number) =>
     setModules((prev) =>
       prev.map((m) =>
-        m.id === mid ? { ...m, lessons: m.lessons.filter((l) => l.id !== lid) } : m
+        m.id === mid
+          ? { ...m, lessons: m.lessons.filter((l) => l.id !== lid) }
+          : m
       )
     );
 
-  /* ==================== Quiz Handlers ==================== */
   const addQuestion = (mid: number, lid: number) =>
     setModules((prev) =>
       prev.map((m) =>
@@ -115,7 +135,14 @@ export default function ModuleCreatorPage() {
                       ...l,
                       quiz: [
                         ...l.quiz,
-                        { id: Date.now(), question: "", options: ["", ""], correctAnswer: "" },
+                        {
+                          id: Date.now(),
+                          question: "",
+                          type: "multiple_choice",
+                          options: ["", ""],
+                          correctAnswer: "",
+                          correctNumericAnswer: null,
+                        },
                       ],
                     }
                   : l
@@ -125,7 +152,13 @@ export default function ModuleCreatorPage() {
       )
     );
 
-  const updateQuestion = (mid: number, lid: number, qid: number, key: string, value: any) =>
+  const updateQuestion = (
+    mid: number,
+    lid: number,
+    qid: number,
+    key: string,
+    value: any
+  ) =>
     setModules((prev) =>
       prev.map((m) =>
         m.id === mid
@@ -135,7 +168,9 @@ export default function ModuleCreatorPage() {
                 l.id === lid
                   ? {
                       ...l,
-                      quiz: l.quiz.map((q) => (q.id === qid ? { ...q, [key]: value } : q)),
+                      quiz: l.quiz.map((q) =>
+                        q.id === qid ? { ...q, [key]: value } : q
+                      ),
                     }
                   : l
               ),
@@ -155,7 +190,9 @@ export default function ModuleCreatorPage() {
                   ? {
                       ...l,
                       quiz: l.quiz.map((q) =>
-                        q.id === qid ? { ...q, options: [...q.options, ""] } : q
+                        q.id === qid
+                          ? { ...q, options: [...q.options, ""] }
+                          : q
                       ),
                     }
                   : l
@@ -165,7 +202,13 @@ export default function ModuleCreatorPage() {
       )
     );
 
-  const updateOption = (mid: number, lid: number, qid: number, index: number, value: string) =>
+  const updateOption = (
+    mid: number,
+    lid: number,
+    qid: number,
+    index: number,
+    value: string
+  ) =>
     setModules((prev) =>
       prev.map((m) =>
         m.id === mid
@@ -176,37 +219,15 @@ export default function ModuleCreatorPage() {
                   ? {
                       ...l,
                       quiz: l.quiz.map((q) =>
-                        q.id === qid ? { ...q, options: q.options.map((o, i) => (i === index ? value : o)) } : q
+                        q.id === qid
+                          ? {
+                              ...q,
+                              options: q.options.map((o, i) =>
+                                i === index ? value : o
+                              ),
+                            }
+                          : q
                       ),
-                    }
-                  : l
-              ),
-            }
-          : m
-      )
-    );
-
-  const removeOption = (mid: number, lid: number, qid: number, index: number) =>
-    setModules((prev) =>
-      prev.map((m) =>
-        m.id === mid
-          ? {
-              ...m,
-              lessons: m.lessons.map((l) =>
-                l.id === lid
-                  ? {
-                      ...l,
-                      quiz: l.quiz.map((q) => {
-                        if (q.id === qid) {
-                          const newOptions = q.options.filter((_, i) => i !== index);
-                          return {
-                            ...q,
-                            options: newOptions,
-                            correctAnswer: newOptions.includes(q.correctAnswer) ? q.correctAnswer : "",
-                          };
-                        }
-                        return q;
-                      }),
                     }
                   : l
               ),
@@ -222,208 +243,293 @@ export default function ModuleCreatorPage() {
           ? {
               ...m,
               lessons: m.lessons.map((l) =>
-                l.id === lid ? { ...l, quiz: l.quiz.filter((q) => q.id !== qid) } : l
+                l.id === lid
+                  ? { ...l, quiz: l.quiz.filter((q) => q.id !== qid) }
+                  : l
               ),
             }
           : m
       )
     );
 
-  /* ==================== Validation ==================== */
   const validate = () => {
     if (!title || !description) return "Course title and description required";
+
     for (const m of modules) {
       if (!m.title) return "Each module must have a title";
+
       for (const l of m.lessons) {
         if (!l.title) return "Each lesson must have a title";
+
         for (const q of l.quiz) {
-          if (!q.correctAnswer) return "Each quiz question needs a correct answer";
-          if (!q.options.includes(q.correctAnswer)) return "Correct answer must match an option";
+          if (!q.question) return "Every question must have text";
+
+          if (q.type === "multiple_choice") {
+            if (!q.correctAnswer)
+              return "Multiple choice questions need a correct answer";
+          }
+
+          if (q.type === "numeric") {
+            if (q.correctNumericAnswer === null)
+              return "Numeric questions need an answer";
+          }
         }
       }
     }
+
     return null;
   };
 
-  /* ==================== Submit ==================== */
   const handleSubmit = async () => {
     if (!token) return;
 
     const error = validate();
     if (error) return alert(error);
 
-    try {
-      // Create course
-      const courseRes = await fetch("http://127.0.0.1:5000/courses", {
+    const courseRes = await fetch("http://127.0.0.1:5000/courses", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ title, description }),
+    });
+
+    const courseData = await courseRes.json();
+    const courseId = courseData.course_id;
+
+    for (const module of modules) {
+      const moduleRes = await fetch("http://127.0.0.1:5000/modules", {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ title, description }),
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: module.title,
+          description: module.description,
+          course_id: courseId,
+        }),
       });
-      if (!courseRes.ok) throw new Error("Failed to create course");
-      const courseData = await courseRes.json();
-      const courseId = courseData.course_id;
 
-      // Create modules, lessons, quizzes
-      for (const module of modules) {
-        const moduleRes = await fetch("http://127.0.0.1:5000/modules", {
+      const moduleData = await moduleRes.json();
+      const moduleId = moduleData.module_id;
+
+      for (const lesson of module.lessons) {
+        const lessonRes = await fetch("http://127.0.0.1:5000/lessons", {
           method: "POST",
-          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ title: module.title, description: module.description, course_id: courseId }),
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: lesson.title,
+            module_id: moduleId,
+            text_content: lesson.content,
+            content_type: "text",
+          }),
         });
-        const moduleData = await moduleRes.json();
-        const moduleId = moduleData.module_id;
 
-        for (const lesson of module.lessons) {
-          const lessonRes = await fetch("http://127.0.0.1:5000/lessons", {
-            method: "POST",
-            headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-            body: JSON.stringify({
-              title: lesson.title,
-              module_id: moduleId,
-              text_content: lesson.content,
-              content_type: "text",
-            }),
-          });
-          const lessonData = await lessonRes.json();
-          const lessonId = lessonData.lesson_id;
+        const lessonData = await lessonRes.json();
+        const lessonId = lessonData.lesson_id;
 
-          for (const q of lesson.quiz) {
-            await fetch("http://127.0.0.1:5000/quizzes", {
-              method: "POST",
-              headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-              body: JSON.stringify({
-                lesson_id: lessonId,
-                question: q.question,
-                options: q.options,
-                correct_option: q.correctAnswer,
-              }),
-            });
+        for (const q of lesson.quiz) {
+          const payload: any = {
+            lesson_id: lessonId,
+            question: q.question,
+          };
+
+          if (q.type === "multiple_choice") {
+            payload.options = q.options;
+            payload.correct_option = q.correctAnswer;
+          } else {
+            payload.correct_numeric_answer = q.correctNumericAnswer;
           }
+
+          await fetch("http://127.0.0.1:5000/quizzes", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
         }
       }
-
-      alert("Course saved successfully!");
-      setTitle("");
-      setDescription("");
-      setModules([]);
-    } catch (err) {
-      alert("Error saving course");
-      console.error(err);
     }
+
+    alert("Course saved successfully!");
+    setTitle("");
+    setDescription("");
+    setModules([]);
   };
 
   if (checkingAuth) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-fuchsia-50">
-        <p>Checking access...</p>
+      <main className="min-h-screen flex items-center justify-center">
+        Checking access...
       </main>
     );
   }
 
-  /* ==================== Render ==================== */
   return (
-    <main className="min-h-screen bg-[#efefef] px-6 md:px-10 py-10">
-      <section className="max-w-4xl mx-auto space-y-6">
+    <main className="min-h-screen bg-gradient-to-b from-fuchsia-50 to-white p-8">
+      <section className="max-w-4xl mx-auto bg-white shadow p-6 rounded-2xl">
+        <input
+          placeholder="Course Title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full p-3 border rounded mb-3"
+        />
 
-        {/* Course Info */}
-        <div className="rounded-3xl p-6 md:p-10 bg-[#efefef] shadow-[-12px_12px_24px_rgba(0,0,0,0.2),12px_-12px_24px_rgba(255,255,255,0.9)] space-y-4">
-          <input
-            placeholder="Course Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full p-3 border rounded"
-          />
-          <textarea
-            placeholder="Course Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full p-3 border rounded"
-          />
-        </div>
+        <textarea
+          placeholder="Course Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="w-full p-3 border rounded mb-6"
+        />
 
-        {/* Modules */}
         {modules.map((m) => (
-          <SoftDropdown
-            key={m.id}
-            label={m.title || "Untitled Module"}
-            items={m.lessons.map((l) => ({
-              content: (
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <strong>{l.title || "Untitled Lesson"}</strong>
-                    <SoftButton width="w-auto" onClick={() => removeLesson(m.id, l.id)}>
-                      Remove Lesson
-                    </SoftButton>
-                  </div>
+          <div key={m.id} className="border rounded p-4 mb-4 bg-fuchsia-50">
+            <input
+              placeholder="Module Title"
+              value={m.title}
+              onChange={(e) => updateModule(m.id, "title", e.target.value)}
+              className="w-full border rounded p-2 mb-2"
+            />
 
-                  <input
-                    placeholder="Lesson Title"
-                    value={l.title}
-                    onChange={(e) => updateLesson(m.id, l.id, "title", e.target.value)}
-                    className="w-full border rounded p-2"
-                  />
-                  <textarea
-                    placeholder="Lesson Content"
-                    value={l.content}
-                    onChange={(e) => updateLesson(m.id, l.id, "content", e.target.value)}
-                    className="w-full border rounded p-2"
-                  />
+            {m.lessons.map((l) => (
+              <div key={l.id} className="bg-white p-3 rounded border mb-3">
+                <input
+                  placeholder="Lesson Title"
+                  value={l.title}
+                  onChange={(e) =>
+                    updateLesson(m.id, l.id, "title", e.target.value)
+                  }
+                  className="w-full border rounded p-2 mb-2"
+                />
 
-                  {/* Quiz Section */}
-                  {l.quiz.map((q) => (
-                    <div key={q.id} className="rounded-lg border p-3 space-y-2 bg-white">
-                      <input
-                        placeholder="Question"
-                        value={q.question}
-                        onChange={(e) => updateQuestion(m.id, l.id, q.id, "question", e.target.value)}
-                        className="w-full border rounded p-2"
-                      />
-                      {q.options.map((o, i) => (
-                        <div key={i} className="flex gap-2 items-center">
-                          <input
-                            value={o}
-                            onChange={(e) => updateOption(m.id, l.id, q.id, i, e.target.value)}
-                            className="flex-1 border rounded p-2"
-                          />
-                          <SoftButton width="w-auto" onClick={() => removeOption(m.id, l.id, q.id, i)}>
-                            x
-                          </SoftButton>
-                        </div>
-                      ))}
-                      <SoftButton width="w-auto" onClick={() => addOption(m.id, l.id, q.id)}>
-                        Add Option
-                      </SoftButton>
-                      <select
-                        value={q.correctAnswer}
-                        onChange={(e) => updateQuestion(m.id, l.id, q.id, "correctAnswer", e.target.value)}
-                        className="w-full border rounded p-2"
-                      >
-                        <option value="">Correct Answer</option>
+                {l.quiz.map((q) => (
+                  <div key={q.id} className="border-t pt-3 mt-3">
+                    <input
+                      placeholder="Question"
+                      value={q.question}
+                      onChange={(e) =>
+                        updateQuestion(
+                          m.id,
+                          l.id,
+                          q.id,
+                          "question",
+                          e.target.value
+                        )
+                      }
+                      className="w-full border p-2 rounded mb-2"
+                    />
+
+                    <select
+                      value={q.type}
+                      onChange={(e) =>
+                        updateQuestion(
+                          m.id,
+                          l.id,
+                          q.id,
+                          "type",
+                          e.target.value
+                        )
+                      }
+                      className="border p-2 rounded mb-2"
+                    >
+                      <option value="multiple_choice">
+                        Multiple Choice
+                      </option>
+                      <option value="numeric">Numeric Answer</option>
+                    </select>
+
+                    {q.type === "multiple_choice" && (
+                      <>
                         {q.options.map((o, i) => (
-                          <option key={i} value={o}>{o || `Option ${i + 1}`}</option>
+                          <input
+                            key={i}
+                            value={o}
+                            onChange={(e) =>
+                              updateOption(
+                                m.id,
+                                l.id,
+                                q.id,
+                                i,
+                                e.target.value
+                              )
+                            }
+                            className="w-full border p-2 rounded mb-2"
+                          />
                         ))}
-                      </select>
-                      <SoftButton width="w-auto" onClick={() => removeQuestion(m.id, l.id, q.id)}>
-                        Remove Question
-                      </SoftButton>
-                    </div>
-                  ))}
-                  <SoftButton width="w-auto" onClick={() => addQuestion(m.id, l.id)}>
-                    Add Question
-                  </SoftButton>
-                </div>
-              ),
-            }))}
-          />
+
+                        <select
+                          value={q.correctAnswer}
+                          onChange={(e) =>
+                            updateQuestion(
+                              m.id,
+                              l.id,
+                              q.id,
+                              "correctAnswer",
+                              e.target.value
+                            )
+                          }
+                          className="w-full border p-2 rounded"
+                        >
+                          <option value="">Correct Answer</option>
+                          {q.options.map((o, i) => (
+                            <option key={i} value={o}>
+                              {o || `Option ${i + 1}`}
+                            </option>
+                          ))}
+                        </select>
+                      </>
+                    )}
+
+                    {q.type === "numeric" && (
+                      <input
+                        type="number"
+                        placeholder="Correct Numeric Answer"
+                        value={q.correctNumericAnswer ?? ""}
+                        onChange={(e) =>
+                          updateQuestion(
+                            m.id,
+                            l.id,
+                            q.id,
+                            "correctNumericAnswer",
+                            Number(e.target.value)
+                          )
+                        }
+                        className="w-full border p-2 rounded"
+                      />
+                    )}
+                  </div>
+                ))}
+
+                <button onClick={() => addQuestion(m.id, l.id)}>
+                  Add Question
+                </button>
+              </div>
+            ))}
+
+            <button onClick={() => addLesson(m.id)}>Add Lesson</button>
+          </div>
         ))}
 
-        <SoftButton width="w-full" onClick={addModule}>
+        <button
+          onClick={addModule}
+          className="block w-full bg-fuchsia-600 text-white py-3 rounded mb-4"
+        >
           Add Module
-        </SoftButton>
+        </button>
 
-        <SoftButton width="w-full" onClick={handleSubmit}>
+        <button
+          onClick={handleSubmit}
+          className="block w-full bg-green-600 text-white py-3 rounded"
+        >
           Save Course
-        </SoftButton>
+        </button>
       </section>
     </main>
   );
