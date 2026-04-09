@@ -16,7 +16,7 @@ SERVICE_NAME = 'server'
 # Load env for server
 env = settings.loader.load_env(SERVICE_NAME)
 
-
+from datetime import timedelta
 
 class Config:
     """Base configuration."""
@@ -25,6 +25,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JWT_SECRET_KEY= os.getenv('JWT_SECRET_KEY', 'default_secret_key')
     SECRET_KEY = os.getenv('SECRET_KEY', 'default_secret_key')
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
 
 class DevelopmentConfig(Config):
     """Development configuration."""

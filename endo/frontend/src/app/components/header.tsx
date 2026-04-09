@@ -21,6 +21,20 @@ export default function Header() {
     const storedRole = localStorage.getItem("role");
     setToken(storedToken);
     setRole(storedRole);
+
+    if (storedToken) {
+      fetch("http://127.0.0.1:5000/api/user/profile", {
+        headers: { Authorization: `Bearer ${storedToken}` },
+      }).then((res) => {
+        if (res.status === 401) {
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("role");
+          setToken(null);
+          setRole(null);
+          router.push("/");
+        }
+      });
+    }
   }, []);
 
   const handleLogout = () => {
@@ -34,7 +48,6 @@ export default function Header() {
 
   const isLoggedIn = !!token;
 
-  // Close menu on click outside
   useEffect(() => {
     if (!open) return;
 
@@ -57,7 +70,6 @@ export default function Header() {
   return (
     <header className="bg-[#efefef] shadow-[inset_0px_-3px_4px_rgba(0,0,0,0.2)]">
       <nav className="container mx-auto flex justify-between items-center px-4 py-6 relative">
-        {/* Logo */}
         <Link href="/" className="flex items-center">
           <Image
             src="/logo.png"
@@ -68,7 +80,6 @@ export default function Header() {
           />
         </Link>
 
-        {/* Trigger button (3 lines) */}
         <button
           ref={buttonRef}
           type="button"
@@ -108,7 +119,6 @@ export default function Header() {
             )}
 
             <div className="flex flex-col gap-1 text-sm">
-              {/* Profile – always visible */}
               <Link
                 href="/profile"
                 onClick={() => setOpen(false)}
@@ -121,7 +131,6 @@ export default function Header() {
                 Profile{isLoggedIn && role === "admin" ? " (Admin)" : ""}
               </Link>
 
-              {/* Course Catalogue */}
               <Link
                 href="/courses"
                 onClick={() => setOpen(false)}
@@ -134,7 +143,6 @@ export default function Header() {
                 Course Catalogue
               </Link>
 
-              {/* When logged OUT */}
               {!isLoggedIn && (
                 <>
                   <Link
@@ -162,7 +170,6 @@ export default function Header() {
                 </>
               )}
 
-              {/* When logged IN */}
               {isLoggedIn && (
                 <button
                   onClick={handleLogout}

@@ -6,7 +6,7 @@ interface NumericQuiz {
   id: number;
   type: "numeric";
   question: string;
-  correct_numeric_answer?: number;
+  correct_numeric_answer?: [number, number, number]; // [lower, answer, upper]
 }
 
 interface QuizNumericProps {
@@ -14,8 +14,6 @@ interface QuizNumericProps {
   answer?: number;
   onSelectAnswer: (quizId: number, value: number) => void;
   submitted: boolean;
-  min: number;
-  max: number;
   step: number;
 }
 
@@ -24,13 +22,17 @@ export const QuizNumeric = ({
   answer,
   onSelectAnswer,
   submitted,
-  min,
-  max,
   step,
 }: QuizNumericProps) => {
-  const correctAnswer = quiz.correct_numeric_answer ?? 0;
-  const safeAnswer = answer ?? min;
   const [hover, setHover] = useState(false);
+
+  // destructure numeric range: [lower, correctAnswer, upper]
+  const [min, correctAnswer, max] = quiz.correct_numeric_answer ?? [0, 0, 100];
+
+  const safeAnswer = answer ?? min;
+
+  // Compute percentage for a visual progress bar
+  const percent = ((safeAnswer - min) / (max - min)) * 100;
 
   return (
     <div
@@ -47,25 +49,32 @@ export const QuizNumeric = ({
       <div className="relative flex items-center gap-3">
         <span className="text-gray-500">{min}</span>
 
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={step}
-          value={safeAnswer}
-          disabled={submitted}
-          onChange={(e) => onSelectAnswer(quiz.id, Number(e.target.value))}
-          onMouseEnter={() => setHover(true)}
-          onMouseLeave={() => setHover(false)}
-          className={`
-            flex-1 h-3 rounded-full appearance-none
-            bg-[#e0e0e0] 
-            shadow-[inset_-2px_-2px_5px_rgba(255,255,255,0.8),
-                    inset_2px_2px_5px_rgba(0,0,0,0.1)]
-            cursor-pointer
-            ${submitted ? "opacity-60 cursor-not-allowed" : ""}
-          `}
-        />
+        <div className="flex-1 relative">
+          {/* Range track background */}
+          <div className="absolute inset-0 h-3 rounded-full bg-[#e0e0e0]"></div>
+          {/* Filled portion */}
+          <div
+            className="absolute h-4 rounded-full bg-fuchsia-300"
+            style={{ width: `${percent}%` }}
+          ></div>
+
+          <input
+            type="range"
+            min={min}
+            max={max}
+            step={step}
+            value={safeAnswer}
+            disabled={submitted}
+            onChange={(e) => onSelectAnswer(quiz.id, Number(e.target.value))}
+            onMouseEnter={() => setHover(true)}
+            onMouseLeave={() => setHover(false)}
+            className={`
+              relative w-full  appearance-none bg-transparent
+              cursor-pointer
+              ${submitted ? "opacity-60 cursor-not-allowed" : ""}
+            `}
+          />
+        </div>
 
         <span className="text-gray-500">{max}</span>
       </div>

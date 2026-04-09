@@ -143,7 +143,7 @@ class LessonQuiz(db.Model):
     correct_option = db.Column(db.String(1), nullable=True)
 
     # numeric questions
-    correct_numeric_answer = db.Column(db.Float, nullable=True)
+    correct_numeric_answer = db.Column(db.JSON, nullable=True)
 
     def __repr__(self):
         return f"<LessonQuiz {self.id}>"

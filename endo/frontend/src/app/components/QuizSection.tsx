@@ -4,13 +4,13 @@ import { useState } from "react";
 import { QuizMultipleChoice } from "./QuizMultipleChoice";
 import { QuizNumeric } from "./QuizNumeric";
 
-// Types for frontend usage
+// Updated types
 type RawQuiz = {
   id: number;
   question: string;
   options?: string[] | null;
   correct_option?: string | null;
-  correct_numeric_answer?: number | null;
+  correct_numeric_answer?: [number, number, number] | null; // [min, correctAnswer, max]
 };
 
 type LessonQuiz = RawQuiz & { type: "numeric" | "multiple-choice" | "invalid" };
@@ -30,7 +30,7 @@ export const QuizSection = ({ quizzes, lessonId }: Props) => {
     setAnswers((prev) => ({ ...prev, [quizId]: value }));
   };
 
-  // Auto-detect quiz type
+  // Detect quiz type
   const getQuizType = (quiz: RawQuiz): "numeric" | "multiple-choice" | "invalid" => {
     if (quiz.correct_numeric_answer != null) return "numeric";
     if (quiz.correct_option != null && Array.isArray(quiz.options)) return "multiple-choice";
@@ -48,9 +48,12 @@ export const QuizSection = ({ quizzes, lessonId }: Props) => {
       if (type === "multiple-choice" && typeof answer === "string") {
         return answer === (q.correct_option ?? "");
       }
+
       if (type === "numeric" && typeof answer === "number") {
-        return answer === (q.correct_numeric_answer ?? 0);
+        const [min, correctAnswer, max] = q.correct_numeric_answer ?? [0, 0, 100];
+        return answer === correctAnswer; // exact match; can adjust tolerance if needed
       }
+
       return false;
     });
 
@@ -97,19 +100,20 @@ export const QuizSection = ({ quizzes, lessonId }: Props) => {
           }
 
           if (type === "numeric") {
+            // Ensure correct_numeric_answer is [min, answer, max] or undefined
+            const numericQuiz = {
+              ...quiz,
+              type,
+              correct_numeric_answer: quiz.correct_numeric_answer ?? undefined,
+            };
+
             return (
               <QuizNumeric
                 key={quiz.id}
-                quiz={{
-                  ...quiz,
-                  correct_numeric_answer: quiz.correct_numeric_answer ?? 0,
-                  type,
-                }}
+                quiz={numericQuiz}
                 answer={answers[quiz.id] as number | undefined}
                 onSelectAnswer={selectAnswer}
                 submitted={submitted}
-                min={0}
-                max={100}
                 step={1}
               />
             );
