@@ -26,6 +26,11 @@ class Config:
     JWT_SECRET_KEY= os.getenv('JWT_SECRET_KEY', 'default_secret_key')
     SECRET_KEY = os.getenv('SECRET_KEY', 'default_secret_key')
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
+    UPLOAD_FOLDER = os.getenv(
+        "UPLOAD_FOLDER",
+        str(settings.loader.BASE_DIR / "uploads"),
+    )
+    MAX_CONTENT_LENGTH = int(os.getenv("MAX_CONTENT_LENGTH", 200 * 1024 * 1024))
 
 class DevelopmentConfig(Config):
     """Development configuration."""

@@ -10,7 +10,16 @@ interface Quiz {
   question: string;
   options: string[];
   correct_option: string;
+  correct_numeric_answer?: number[] | null;
   type: "multiple-choice"; // future types can be added here
+}
+
+interface RawQuiz {
+  id: number;
+  question: string;
+  options: string[] | string;
+  correct_option: string;
+  correct_numeric_answer?: number[] | null;
 }
 
 interface Lesson {
@@ -18,6 +27,8 @@ interface Lesson {
   title: string;
   content_type: string;
   text_content: string;
+  content_url?: string | null;
+  media_kind?: "image" | "video" | null;
   module_id?: number;
 }
 
@@ -34,6 +45,7 @@ export default function LessonPage() {
   const lessonIdParam = Array.isArray(params.lessonid) ? params.lessonid[0] : params.lessonid;
   const moduleIdParam = Array.isArray(params.moduleid) ? params.moduleid[0] : params.moduleid;
   const courseIdParam = Array.isArray(params.courseid) ? params.courseid[0] : params.courseid;
+  const missingLessonId = !lessonIdParam;
 
   // Use state for lesson, quizzes, sidebar items, loading
   const [lesson, setLesson] = useState<Lesson | null>(null);
@@ -41,15 +53,6 @@ export default function LessonPage() {
   const [moduleLessons, setModuleLessons] = useState<Lesson[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Early return if no lessonId
-  if (!lessonIdParam) {
-    return (
-      <main className="min-h-screen flex items-center justify-center bg-[#efefef]">
-        <p className="text-gray-600">Lesson not found.</p>
-      </main>
-    );
-  }
 
   // Fetch courses for sidebar
   useEffect(() => {
@@ -66,6 +69,8 @@ export default function LessonPage() {
 
   // Fetch lesson, quizzes, module lessons
   useEffect(() => {
+    if (!lessonIdParam) return;
+
     const token = localStorage.getItem("access_token");
     if (!token) {
       router.push("/login");
@@ -88,8 +93,8 @@ export default function LessonPage() {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (quizRes.ok) {
-          const rawQuizzes = await quizRes.json();
-          const parsedQuizzes: Quiz[] = rawQuizzes.map((q: any) => ({
+          const rawQuizzes: RawQuiz[] = await quizRes.json();
+          const parsedQuizzes: Quiz[] = rawQuizzes.map((q) => ({
             ...q,
             options: Array.isArray(q.options) ? q.options : JSON.parse(q.options),
             type: "multiple-choice",
@@ -118,6 +123,14 @@ export default function LessonPage() {
 
     fetchLessonData();
   }, [lessonIdParam, moduleIdParam, router]);
+
+  if (missingLessonId) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-[#efefef]">
+        <p className="text-gray-600">Lesson not found.</p>
+      </main>
+    );
+  }
 
   if (loading) {
     return (
@@ -171,8 +184,22 @@ export default function LessonPage() {
 
             <header>
               <h1 className="text-3xl md:text-4xl font-bold text-fuchsia-700 mb-4">{lesson.title}</h1>
-              {lesson.content_type === "text" && (
+              {lesson.text_content && (
                 <div className="prose max-w-none text-gray-800">{lesson.text_content}</div>
+              )}
+              {lesson.media_kind === "image" && lesson.content_url && (
+                <img
+                  src={lesson.content_url}
+                  alt={lesson.title}
+                  className="mt-6 w-full max-h-[32rem] rounded-2xl object-contain bg-white"
+                />
+              )}
+              {lesson.media_kind === "video" && lesson.content_url && (
+                <video
+                  src={lesson.content_url}
+                  controls
+                  className="mt-6 w-full max-h-[32rem] rounded-2xl bg-black"
+                />
               )}
             </header>
           </div>

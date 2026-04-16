@@ -18,6 +18,7 @@ import server.routes.module
 import server.routes.lesson
 import server.routes.quiz
 import server.routes.certificates
+import server.routes.media
 
 
 def create_app(config: type[server.config.Config] | None = None) -> flask.Flask:
@@ -41,7 +42,7 @@ def create_app(config: type[server.config.Config] | None = None) -> flask.Flask:
     app.register_blueprint(server.routes.lesson.blueprint)
     app.register_blueprint(server.routes.quiz.blueprint)
     app.register_blueprint(server.routes.certificates.blueprint)
+    app.register_blueprint(server.routes.media.blueprint)
 
     return app
-
 

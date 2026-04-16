@@ -24,6 +24,7 @@ interface Course {
   id: number;
   title: string;
   description: string;
+  image_url?: string | null;
 }
 
 export default function CoursePage() {
@@ -176,6 +177,15 @@ export default function CoursePage() {
           <div className="mb-3 max-h-[316px] overflow-hidden">
             <AutoFitTitle text={course.title} />
           </div>
+          {course.image_url && (
+            <div className="mb-6 overflow-hidden rounded-3xl bg-white shadow-[0_18px_40px_rgba(0,0,0,0.12)]">
+              <img
+                src={course.image_url}
+                alt={course.title}
+                className="h-[20rem] w-full object-cover"
+              />
+            </div>
+          )}
           <p className="text-sm md:text-base text-gray-700">
             {course.description}
           </p>
