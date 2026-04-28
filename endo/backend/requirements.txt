@@ -13,3 +13,4 @@ requests==2.32.0
 
 pytest==8.4.2
 gunicorn
+psycopg2-binary
