@@ -1,34 +1,26 @@
-"""TODO: Write docstring here
-"""
 import os
 import server
 import server.logging
 
-# Create the Flask application
-app = server.create_app()
 logging = server.logging.get_logger(__name__)
 
+# Create the Flask application
+app = server.create_app()
+
 def _maybe_init_db() -> None:
-    """
-    Run the database initialisation if enabled.
+    flag = os.environ.get("INIT_DB_ON_STARTUP", "0")
+    logging.warning("INIT_DB_ON_STARTUP flag value: '%s'", flag)
+    if flag.strip().lower() in {"1", "true", "yes"}:
+        logging.warning("Starting DB initialisation...")
+        from server.create_db import main as init_db
+        init_db()
+        logging.warning("DB initialisation complete.")
+    else:
+        logging.warning("Skipping DB init.")
 
-    This calls server.create_db.main(), which creates all tables using
-    SQLAlchemy. It is safe to run multiple times.
-    """
-    flag = os.environ.get("INIT_DB_ON_STARTUP", "0").lower()
-    if flag in {"1", "true", "yes"}:
-        try:
-            from server.create_db import main as init_db
-            init_db()
-        except Exception as exc:
-            logging.error("Database init failed: %s", exc, exc_info=True)
-            raise
+with app.app_context():
+    _maybe_init_db()
 
-# Initialise the DB on boot (Render will execute this when starting the service)
-_maybe_init_db()
-
-
-# If you ever run this locally via `python app.py`
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port)
