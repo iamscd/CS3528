@@ -20,9 +20,9 @@ def _maybe_init_db() -> None:
         try:
             from server.create_db import main as init_db
             init_db()
-        except Exception as exc:  # noqa: BLE001
-            # Don't crash the app if DB init fails; just log it.
-            logging.warning("Database init failed or was skipped: %s", exc)
+        except Exception as exc:
+            logging.error("Database init failed: %s", exc, exc_info=True)
+            raise
 
 # Initialise the DB on boot (Render will execute this when starting the service)
 _maybe_init_db()
