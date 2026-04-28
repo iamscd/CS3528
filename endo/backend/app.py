@@ -15,7 +15,7 @@ def _maybe_init_db() -> None:
     This calls server.create_db.main(), which creates all tables using
     SQLAlchemy. It is safe to run multiple times.
     """
-    flag = os.environ.get("INIT_DB_ON_STARTUP", "1").lower()
+    flag = os.environ.get("INIT_DB_ON_STARTUP", "0").lower()
     if flag in {"1", "true", "yes"}:
         try:
             from server.create_db import main as init_db

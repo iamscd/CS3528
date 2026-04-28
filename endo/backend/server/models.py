@@ -15,7 +15,7 @@ class User(db.Model):
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(150), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.Enum("member", "admin"), default="member")
+    role = db.Column(db.Enum("member", "admin", name="user_role"), default="member", nullable = False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     courses_created = db.relationship("Course", backref="creator", lazy=True)
@@ -80,7 +80,7 @@ class Lesson(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     module_id = db.Column(db.Integer, db.ForeignKey("modules.id"), nullable=False)
     title = db.Column(db.String(150), nullable=False)
-    content_type = db.Column(db.Enum("text", "image", "video", "mixed"), nullable=False)
+    content_type = db.Column(db.Enum("text", "image", "video", "mixed", name="lesson_content_type"), nullable=False, )
     content_url = db.Column(db.String(255))
     text_content = db.Column(db.Text)
     order_index = db.Column(db.Integer, default=0)
@@ -140,7 +140,7 @@ class LessonQuiz(db.Model):
 
     # multiple choice questions
     options = db.Column(db.JSON, nullable=True)
-    correct_option = db.Column(db.String(1), nullable=True)
+    correct_option = db.Column(db.Enum("A", "B", "C", "D", name="module_test_correct_option"), nullable=False,)
 
     # numeric questions
     correct_numeric_answer = db.Column(db.JSON, nullable=True)
@@ -161,7 +161,12 @@ class ModuleTest(db.Model):
     option_b = db.Column(db.String(255))
     option_c = db.Column(db.String(255))
     option_d = db.Column(db.String(255))
-    correct_option = db.Column(db.Enum("A", "B", "C", "D"), nullable=False)
+
+    correct_option = db.Column(
+    db.Enum("A", "B", "C", "D", name="quiz_correct_option"),
+    nullable=False,
+)
+    
 
     results = db.relationship(
         "UserTestResult", backref="test", lazy=True, cascade="all, delete-orphan"
