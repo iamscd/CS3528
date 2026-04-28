@@ -199,7 +199,29 @@ export default function CoursesPage() {
                     </p>
                   </div>
 
-                  <div style={{ flexShrink: 0 }}>
+                  <div style={{ flexShrink: 0, display: "flex", gap: 8, alignItems: "center" }}>
+                    {role === "admin" && (
+                      <button
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          if (!confirm(`Delete "${course.title}"?`)) return;
+                          const token = localStorage.getItem("access_token");
+                          const res = await fetch(`http://127.0.0.1:5000/courses/${course.course_id}`, {
+                            method: "DELETE",
+                            headers: { Authorization: `Bearer ${token}` },
+                          });
+                          if (res.ok) setCourses(prev => prev.filter(c => c.course_id !== course.course_id));
+                          else alert("Failed to delete course");
+                        }}
+                        style={{
+                          fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
+                          padding: "9px 16px", borderRadius: 12, border: "0.5px solid rgba(163,45,45,0.3)",
+                          background: "transparent", color: "#A32D2D", cursor: "pointer",
+                        }}
+                      >
+                        Delete
+                      </button>
+                    )}
                     <Link href={`/courses/${course.course_id}`} style={{
                       display: "inline-block",
                       fontSize: 13, fontWeight: 700, letterSpacing: "0.06em",

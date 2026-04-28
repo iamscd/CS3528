@@ -28,9 +28,11 @@ export default function CoursePage() {
   const [moduleProgress, setModuleProgress] = useState<{ [key: number]: number }>({});
   const [openModule, setOpenModule] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
+    setRole(localStorage.getItem("role"));
     const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
     fetch("http://127.0.0.1:5000/courses", { headers })
       .then(r => r.ok && r.json()).then(d => d && setCourses(d)).catch(console.error);
@@ -115,10 +117,19 @@ export default function CoursePage() {
 
         {/* Main */}
         <div style={{ flex: 1 }}>
-          <header style={{ marginBottom: 40 }}>
-            <h1 style={{ fontSize: "clamp(28px, 5vw, 42px)", fontWeight: 500, color: "#26215C", margin: "0 0 12px" }}>
-              {course.title}
-            </h1>
+        <header style={{ marginBottom: 40 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+          <h1 style={{ fontSize: "clamp(28px, 5vw, 42px)", fontWeight: 500, color: "#26215C", margin: 0 }}>
+            {course.title}
+          </h1>
+          {role === "admin" && (
+            <Link href={`/courses/${courseid}/edit`} style={{
+              fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
+              padding: "7px 14px", borderRadius: 10, border: "0.5px solid rgba(83,74,183,0.3)",
+              background: "transparent", color: "#534AB7", textDecoration: "none", flexShrink: 0,
+            }}>Edit course</Link>
+          )}
+        </div>
             {course.image_url && (
               <div style={{ borderRadius: 20, overflow: "hidden", marginBottom: 20 }}>
                 <img src={course.image_url} alt={course.title} style={{ width: "100%", height: 280, objectFit: "cover" }} />
@@ -148,15 +159,42 @@ export default function CoursePage() {
 
                   return (
                     <div key={module.id} style={{ background: "rgba(255,255,255,0.55)", border: "0.5px solid rgba(255,255,255,0.8)", borderRadius: 16, overflow: "hidden" }}>
-                      <button onClick={() => setOpenModule(isOpen ? null : module.id)} style={{
-                        width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
-                        padding: "16px 20px", background: "transparent", border: "none", cursor: "pointer",
-                      }}>
-                        <span style={{ fontSize: 15, fontWeight: 500, color: completed ? "#3B6D11" : "#3C3489" }}>
-                          {completed ? "✓ " : ""}{module.title}
-                        </span>
-                        <span style={{ fontSize: 12, color: "#7F77DD" }}>{isOpen ? "▲" : "▼"}</span>
-                      </button>
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        <button onClick={() => setOpenModule(isOpen ? null : module.id)} style={{
+                          flex: 1, display: "flex", justifyContent: "space-between", alignItems: "center",
+                          padding: "16px 20px", background: "transparent", border: "none", cursor: "pointer",
+                        }}>
+                          <span style={{ fontSize: 15, fontWeight: 500, color: completed ? "#3B6D11" : "#3C3489" }}>
+                            {completed ? "✓ " : ""}{module.title}
+                          </span>
+                          <span style={{ fontSize: 12, color: "#7F77DD" }}>{isOpen ? "▲" : "▼"}</span>
+                        </button>
+
+                        {role === "admin" && (
+                          <button
+                            onClick={async () => {
+                              if (!confirm(`Delete module "${module.title}" and all its lessons?`)) return;
+                              const token = localStorage.getItem("access_token");
+                              const res = await fetch(`http://127.0.0.1:5000/modules/${module.id}`, {
+                                method: "DELETE",
+                                headers: { Authorization: `Bearer ${token}` },
+                              });
+                              if (res.ok) {
+                                setModules(prev => prev.filter(m => m.id !== module.id));
+                                setModuleLessons(prev => { const n = { ...prev }; delete n[module.id]; return n; });
+                              } else alert("Failed to delete module");
+                            }}
+                            style={{
+                              fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
+                              padding: "8px 14px", marginRight: 12, borderRadius: 8,
+                              border: "0.5px solid rgba(163,45,45,0.3)", background: "transparent",
+                              color: "#A32D2D", cursor: "pointer", flexShrink: 0,
+                            }}
+                          >
+                            Delete module
+                          </button>
+                        )}
+                      </div>
 
                       {isOpen && (
                         <div style={{ borderTop: "0.5px solid rgba(180,160,240,0.2)", padding: "12px 20px 16px" }}>
@@ -165,13 +203,40 @@ export default function CoursePage() {
                           ) : (
                             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                               {lessons.map(lesson => (
-                                <Link key={lesson.id} href={`/courses/${courseid}/${module.id}/${lesson.id}`} style={{
-                                  display: "block", padding: "10px 14px", borderRadius: 10,
-                                  background: "rgba(180,160,240,0.1)", border: "0.5px solid rgba(180,160,240,0.2)",
-                                  fontSize: 14, color: "#534AB7", textDecoration: "none", fontWeight: 400,
-                                }}>
-                                  {lesson.title}
-                                </Link>
+                                <div key={lesson.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                  <Link href={`/courses/${courseid}/${module.id}/${lesson.id}`} style={{
+                                    flex: 1, display: "block", padding: "10px 14px", borderRadius: 10,
+                                    background: "rgba(180,160,240,0.1)", border: "0.5px solid rgba(180,160,240,0.2)",
+                                    fontSize: 14, color: "#534AB7", textDecoration: "none", fontWeight: 400,
+                                  }}>
+                                    {lesson.title}
+                                  </Link>
+                                  {role === "admin" && (
+                                    <button
+                                      onClick={async () => {
+                                        if (!confirm(`Delete "${lesson.title}"?`)) return;
+                                        const token = localStorage.getItem("access_token");
+                                        const res = await fetch(`http://127.0.0.1:5000/lessons/${lesson.id}`, {
+                                          method: "DELETE",
+                                          headers: { Authorization: `Bearer ${token}` },
+                                        });
+                                        if (res.ok) {
+                                          setModuleLessons(prev => ({
+                                            ...prev,
+                                            [module.id]: prev[module.id].filter(l => l.id !== lesson.id),
+                                          }));
+                                        } else alert("Failed to delete lesson");
+                                      }}
+                                      style={{
+                                        fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
+                                        padding: "8px 12px", borderRadius: 10, border: "0.5px solid rgba(163,45,45,0.3)",
+                                        background: "transparent", color: "#A32D2D", cursor: "pointer", flexShrink: 0,
+                                      }}
+                                    >
+                                      Delete
+                                    </button>
+                                  )}
+                                </div>
                               ))}
                             </div>
                           )}

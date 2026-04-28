@@ -229,3 +229,19 @@ def lesson_progress(lesson_id):
         lesson_id=lesson_id,
     ).first()
     return flask.jsonify({"is_completed": bool(progress)}), 200
+
+# DELETE lesson (admin only)
+@blueprint.route("/lessons/<int:lesson_id>", methods=["DELETE"])
+@flask_jwt_extended.jwt_required()
+def delete_lesson(lesson_id):
+    claims = flask_jwt_extended.get_jwt()
+    if claims.get("role") != "admin":
+        return flask.jsonify({"message": "Only admins can delete lessons"}), 403
+
+    lesson = Lesson.query.get(lesson_id)
+    if not lesson:
+        return flask.jsonify({"message": "Lesson not found"}), 404
+
+    server.extensions.database.session.delete(lesson)
+    server.extensions.database.session.commit()
+    return flask.jsonify({"message": "Lesson deleted"}), 200

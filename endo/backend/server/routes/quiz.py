@@ -85,3 +85,20 @@ def create_quiz_question():
     server.extensions.database.session.commit()
 
     return flask.jsonify({"message": "Quiz question created", "question_id": question.id}), 201
+
+# DELETE quiz question (admin only)
+@blueprint.route("/quizzes/<int:quiz_id>", methods=["DELETE"])
+@flask_jwt_extended.jwt_required()
+def delete_quiz_question(quiz_id):
+    claims = flask_jwt_extended.get_jwt()
+    if claims.get("role") != "admin":
+        return flask.jsonify({"message": "Only admins can delete quiz questions"}), 403
+
+    from server.models import LessonQuiz
+    question = LessonQuiz.query.get(quiz_id)
+    if not question:
+        return flask.jsonify({"message": "Question not found"}), 404
+
+    server.extensions.database.session.delete(question)
+    server.extensions.database.session.commit()
+    return flask.jsonify({"message": "Question deleted"}), 200

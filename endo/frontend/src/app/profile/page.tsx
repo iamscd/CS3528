@@ -25,9 +25,17 @@ interface Course {
   description: string;
 }
 
+const BUBBLES = [
+  { w: 300, h: 300, top: -80, left: -100 },
+  { w: 150, h: 150, top: 60, right: 40 },
+  { w: 400, h: 400, top: 400, right: -150 },
+  { w: 100, h: 100, top: 600, left: 80 },
+  { w: 200, h: 200, bottom: 100, left: -60 },
+  { w: 120, h: 120, bottom: 80, right: 100 },
+];
+
 export default function ProfilePage() {
   const router = useRouter();
-
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,175 +43,165 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
-
-    if (!token) {
-      router.push('/login');
-      return;
-    }
+    if (!token) { router.push('/login'); return; }
 
     const fetchData = async () => {
       try {
-        // 1) User profile
-        const profileRes = await fetch(
-          'http://127.0.0.1:5000/api/user/profile',
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (!profileRes.ok) {
-          throw new Error('Failed to load profile');
-        }
-
-        const profileData = await profileRes.json();
-        setProfile(profileData);
-
-        // 2) Courses (for now, treat all as "current courses")
-        const coursesRes = await fetch('http://127.0.0.1:5000/courses', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        const profileRes = await fetch('http://127.0.0.1:5000/api/user/profile', {
+          headers: { Authorization: `Bearer ${token}` },
         });
+        if (!profileRes.ok) throw new Error('Failed to load profile');
+        setProfile(await profileRes.json());
 
+        const coursesRes = await fetch('http://127.0.0.1:5000/courses', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (coursesRes.ok) {
           const data = await coursesRes.json();
-          const mapped = data.map((c: any) => ({
-            course_id: c.id,
-            title: c.title,
-            description: c.description,
-          }));
-          setCourses(mapped);
+          setCourses(data.map((c: any) => ({ course_id: c.id, title: c.title, description: c.description })));
         }
       } catch (err: any) {
-        console.error(err);
         setError(err.message || 'Failed to load profile');
       } finally {
         setLoading(false);
       }
     };
-
     fetchData();
   }, [router]);
 
-  const firstName =
-    profile?.name?.split(' ')[0] ||
-    (profile?.email ? profile.email.split('@')[0] : 'Member');
+  const firstName = profile?.name?.split(' ')[0] || profile?.email?.split('@')[0] || 'Member';
   const lastName = profile?.name?.split(' ').slice(1).join(' ') || '';
-  const username =
-    profile?.email?.split('@')[0] ||
-    profile?.name?.toLowerCase().replace(/\s+/g, '') ||
-    'user';
+  const username = profile?.email?.split('@')[0] || 'user';
+  const progress = profile?.learning_progress;
+  const progressPercent = progress ? Math.round(progress.progress_percent) : 0;
 
   return (
-    <main className="min-h-screen container mx-auto p-4">
-      <div className="rounded-3xl bg-white/90 shadow-lg p-6 md:p-10">
+    <main style={{ minHeight: "100vh", background: "#f0eeff", position: "relative", overflowX: "hidden" }}>
+      {BUBBLES.map((b, i) => (
+        <div key={i} style={{
+          position: "absolute", borderRadius: "50%",
+          background: "rgba(255,255,255,0.35)", border: "1px solid rgba(255,255,255,0.55)",
+          width: b.w, height: b.h,
+          top: (b as any).top ?? "auto", bottom: (b as any).bottom ?? "auto",
+          left: (b as any).left ?? "auto", right: (b as any).right ?? "auto",
+          pointerEvents: "none", zIndex: 0,
+        }} />
+      ))}
+
+      <div style={{ position: "relative", zIndex: 1, maxWidth: 900, margin: "0 auto", padding: "64px 24px 80px" }}>
+
         {loading ? (
-          <p className="text-gray-600">Loading profile…</p>
+          <p style={{ color: "#7F77DD" }}>Loading profile...</p>
         ) : error ? (
-          <div className="rounded-2xl bg-red-50 border border-red-200 p-4 mb-4">
-            <p className="text-red-700 text-sm">{error}</p>
-            <p className="text-sm text-gray-600 mt-2">
-              Please check that the backend is running and try refreshing the
-              page.
-            </p>
+          <div style={{ background: "rgba(255,255,255,0.55)", borderRadius: 20, padding: 24 }}>
+            <p style={{ color: "#A32D2D", fontSize: 14 }}>{error}</p>
           </div>
         ) : !profile ? (
-          <p className="text-gray-600">
-            No profile data found. Please log in again.
-          </p>
+          <p style={{ color: "#7F77DD" }}>No profile data found. Please log in again.</p>
         ) : (
           <>
-            {/* Top section: avatar + name + basic info */}
-            <section className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-10">
-              <div className="flex items-center gap-4">
-                {/* Avatar (initial) */}
-                <div className="h-20 w-20 rounded-full bg-fuchsia-600 text-white flex items-center justify-center text-2xl font-semibold">
+            {/* Profile card */}
+            <div style={{
+              background: "rgba(255,255,255,0.55)", border: "0.5px solid rgba(255,255,255,0.8)",
+              borderRadius: 24, padding: "32px 28px", marginBottom: 28,
+              display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 24,
+            }}>
+              {/* Avatar + info */}
+              <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+                <div style={{
+                  width: 72, height: 72, borderRadius: "50%",
+                  background: "#534AB7", color: "#fff",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 28, fontWeight: 500, flexShrink: 0,
+                }}>
                   {firstName.charAt(0).toUpperCase()}
                 </div>
-
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">
+                  <h1 style={{ fontSize: 26, fontWeight: 500, color: "#26215C", margin: "0 0 4px" }}>
                     {firstName} {lastName}
                   </h1>
-                  <p className="text-sm text-gray-500">@{username}</p>
-                  <p className="text-sm text-gray-500">
+                  <p style={{ fontSize: 13, color: "#7F77DD", margin: "0 0 2px" }}>@{username}</p>
+                  <p style={{ fontSize: 13, color: "#7F77DD", margin: 0 }}>
                     {profile.role === 'admin' ? 'Admin' : 'Member'}
-                    {profile.date_joined
-                      ? ` · Joined ${profile.date_joined}`
-                      : null}
+                    {profile.date_joined ? ` · Joined ${profile.date_joined}` : ''}
                   </p>
                 </div>
               </div>
 
-              {/* Right-side: stats + CTA */}
-              <div className="flex flex-col items-start md:items-end gap-2">
-                {profile.learning_progress && (
-                  <div className="text-sm text-gray-600">
-                    <p className="font-medium text-gray-800">
+              {/* Right side: progress + CTA */}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 12 }}>
+                {progress && (
+                  <div style={{ textAlign: "right" }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: "#7F77DD", margin: "0 0 6px" }}>
                       Learning progress
                     </p>
-                    <p>
-                      {profile.learning_progress.completed_lessons} of{' '}
-                      {profile.learning_progress.total_lessons} lessons ·{' '}
-                      {profile.learning_progress.progress_percent}%
+                    <p style={{ fontSize: 13, color: "#534AB7", margin: "0 0 8px" }}>
+                      {progress.completed_lessons} of {progress.total_lessons} lessons · {progressPercent}%
                     </p>
+                    <div style={{ width: 180, height: 6, background: "rgba(180,160,240,0.2)", borderRadius: 99, overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${progressPercent}%`, background: "#534AB7", borderRadius: 99, transition: "width 0.4s ease" }} />
+                    </div>
                   </div>
                 )}
-
-                {/* 🔗 SAME path as header: /courses */}
-                <Link
-                  href="/courses"
-                  className="mt-2 inline-flex items-center px-4 py-2 rounded-xl bg-fuchsia-600 text-white text-sm font-medium hover:bg-fuchsia-700 transition"
-                >
-                  View course catalogue
+                <Link href="/courses" style={{
+                  fontSize: 13, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase",
+                  padding: "9px 20px", borderRadius: 12, textDecoration: "none",
+                  background: "#534AB7", color: "#fff",
+                  boxShadow: "0 4px 14px rgba(83,74,183,0.25)",
+                }}>
+                  View courses
                 </Link>
               </div>
-            </section>
+            </div>
 
-            {/* "Your current courses" */}
+            {/* Divider */}
+            <div style={{ height: 1, background: "rgba(180,160,240,0.25)", marginBottom: 32 }} />
+
+            {/* Courses section */}
             <section>
-              <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-4">
-                Your current courses
+              <h2 style={{ fontSize: 22, fontWeight: 500, color: "#26215C", margin: "0 0 6px" }}>
+                Your courses
               </h2>
+              <p style={{ fontSize: 14, color: "#7F77DD", margin: "0 0 24px" }}>
+                Continue where you left off, or discover something new.
+              </p>
 
               {courses.length === 0 ? (
-                <div className="rounded-2xl bg-fuchsia-50 p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <p className="text-gray-700">
-                    You’re not enrolled in any courses yet.
-                  </p>
-                  <Link
-                    href="/courses"
-                    className="inline-flex items-center px-4 py-2 rounded-xl bg-fuchsia-600 text-white text-sm font-medium hover:bg-fuchsia-700 transition"
-                  >
+                <div style={{ background: "rgba(255,255,255,0.55)", border: "0.5px solid rgba(255,255,255,0.8)", borderRadius: 20, padding: "28px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
+                  <p style={{ fontSize: 14, color: "#534AB7", margin: 0 }}>You're not enrolled in any courses yet.</p>
+                  <Link href="/courses" style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", padding: "9px 20px", borderRadius: 12, textDecoration: "none", background: "#534AB7", color: "#fff" }}>
                     Explore courses
                   </Link>
                 </div>
               ) : (
-                <>
-                  <p className="text-gray-600 mb-4">
-                    Continue where you left off, or discover something new.
-                  </p>
-                  <div className="grid md:grid-cols-3 gap-6">
-                    {courses.slice(0, 6).map((course) => (
-                      <Link
-                        key={course.course_id}
-                        href={`/courses/${course.course_id}`} // 🔗 same as ModulesPage
-                        className="block rounded-2xl bg-fuchsia-50 hover:bg-fuchsia-100 transition shadow-sm hover:shadow-md p-5"
-                      >
-                        <h3 className="text-lg font-semibold text-fuchsia-700 mb-2">
-                          {course.title}
-                        </h3>
-                        <p className="text-sm text-gray-700 line-clamp-3">
-                          {course.description}
-                        </p>
-                      </Link>
-                    ))}
-                  </div>
-                </>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
+                  {courses.slice(0, 6).map(course => (
+                    <Link key={course.course_id} href={`/courses/${course.course_id}`} style={{
+                      display: "block", textDecoration: "none",
+                      background: "rgba(255,255,255,0.55)", border: "0.5px solid rgba(255,255,255,0.8)",
+                      borderRadius: 20, padding: "22px 20px",
+                    }}>
+                      <h3 style={{ fontSize: 16, fontWeight: 500, color: "#3C3489", margin: "0 0 8px" }}>
+                        {course.title}
+                      </h3>
+                      <p style={{ fontSize: 13, color: "#534AB7", margin: 0, lineHeight: 1.6,
+                        overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" as const,
+                      }}>
+                        {course.description}
+                      </p>
+                    </Link>
+                  ))}
+                </div>
               )}
             </section>
+
+            {/* Footer strip */}
+            <div style={{ marginTop: 80, textAlign: "center" }}>
+              <div style={{ height: 1, background: "rgba(180,160,240,0.25)", marginBottom: 32 }} />
+              <p style={{ fontSize: 13, color: "#7F77DD", margin: 0 }}>
+                Built to support endometriosis awareness · Free for everyone
+              </p>
+            </div>
           </>
         )}
       </div>
