@@ -12,10 +12,6 @@ from server.extensions import database
 logging = server.logging.get_logger(__name__)
 
 
-if os.getenv("RESET_DB") == "true":
-    database.drop_all()
-    database.create_all()
-
 def _seed_initial_data() -> None:
     """Create default users, course, module and lesson if none exist."""
 
@@ -26,11 +22,15 @@ def _seed_initial_data() -> None:
 
     logging.info("No users found. Seeding initial dataset...")
 
+    import server.extensions
     bcrypt = server.extensions.bcrypt
 
     # --- Load passwords from environment ---
     admin_pass = os.getenv("ADMIN_PASSWORD")
     member_pass = os.getenv("MEMBER_PASSWORD")
+
+    if not admin_pass or not member_pass:
+        raise RuntimeError("ADMIN_PASSWORD and MEMBER_PASSWORD must be set.")
 
     # ---- USERS ----
     admin = User(
@@ -47,8 +47,7 @@ def _seed_initial_data() -> None:
         role="member",
     )
 
-    database.session.add(admin)
-    database.session.add(member)
+    database.session.add_all([admin, member])
     database.session.commit()
 
     logging.info("Users created: %s, %s", admin.email, member.email)
@@ -92,7 +91,7 @@ def _seed_initial_data() -> None:
             "It is not linked to any module",
             "It is only for admin testing"
         ],
-        correct_option="The demo course and demo module",
+        correct_option="A",
     )
 
     database.session.add(demo_quiz)
