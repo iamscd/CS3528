@@ -4,28 +4,21 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
-interface Lesson {
-  id: number;
-  title: string;
-}
+interface Lesson { id: number; title: string; }
+interface Module { id: number; title: string; description?: string; course_id?: number; }
 
-interface Module {
-  id: number;
-  title: string;
-  description?: string;
-  course_id?: number;
-}
+const BUBBLES = [
+  { w: 300, h: 300, top: -80, left: -100 },
+  { w: 150, h: 150, top: 60, right: 40 },
+  { w: 400, h: 400, top: 300, right: -150 },
+  { w: 200, h: 200, bottom: 100, left: -60 },
+];
 
 export default function ModulePage() {
   const params = useParams();
   const router = useRouter();
-
-  const moduleid = Array.isArray(params.moduleid)
-    ? params.moduleid[0]
-    : params.moduleid;
-  const courseid = Array.isArray(params.courseid)
-    ? params.courseid[0]
-    : params.courseid;
+  const moduleid = Array.isArray(params.moduleid) ? params.moduleid[0] : params.moduleid;
+  const courseid = Array.isArray(params.courseid) ? params.courseid[0] : params.courseid;
 
   const [module, setModule] = useState<Module | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -35,28 +28,16 @@ export default function ModulePage() {
 
   useEffect(() => {
     if (!moduleid) return;
-
     const token = localStorage.getItem("access_token");
-    if (!token) {
-      router.push("/login");
-      return;
-    }
+    if (!token) { router.push("/login"); return; }
 
     const fetchData = async () => {
       try {
-        const moduleRes = await fetch(
-          `http://127.0.0.1:5000/modules/${moduleid}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        if (moduleRes.status === 401)
-          throw new Error("You are not authorized. Please log in again.");
+        const moduleRes = await fetch(`http://127.0.0.1:5000/modules/${moduleid}`, { headers: { Authorization: `Bearer ${token}` } });
         if (!moduleRes.ok) throw new Error("Module not found");
         const moduleData = await moduleRes.json();
 
-        const lessonsRes = await fetch(
-          `http://127.0.0.1:5000/modules/${moduleid}/lessons`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const lessonsRes = await fetch(`http://127.0.0.1:5000/modules/${moduleid}/lessons`, { headers: { Authorization: `Bearer ${token}` } });
         const lessonsData = lessonsRes.ok ? await lessonsRes.json() : [];
 
         setModule(moduleData);
@@ -64,135 +45,94 @@ export default function ModulePage() {
 
         const progressResults = await Promise.all(
           lessonsData.map((lesson: Lesson) =>
-            fetch(`http://127.0.0.1:5000/lessons/${lesson.id}/progress`, {
-              headers: { Authorization: `Bearer ${token}` },
-            }).then((res) => res.json())
+            fetch(`http://127.0.0.1:5000/lessons/${lesson.id}/progress`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json())
           )
         );
-
-        const completedIds = progressResults
-          .map((p, idx) => (p.is_completed ? lessonsData[idx].id : null))
-          .filter(Boolean) as number[];
-
-        setCompletedLessons(completedIds);
+        setCompletedLessons(progressResults.map((p, idx) => p.is_completed ? lessonsData[idx].id : null).filter(Boolean) as number[]);
       } catch (err: any) {
         setError(err.message || "Something went wrong");
-        setModule(null);
-        setLessons([]);
       } finally {
         setLoading(false);
       }
     };
-
     fetchData();
   }, [moduleid, router]);
 
-  const completedCount = completedLessons.length;
-  const totalCount = lessons.length;
-  const progressPercent =
-    totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+  const progressPercent = lessons.length > 0 ? (completedLessons.length / lessons.length) * 100 : 0;
 
-  if (loading) {
-    return (
-      <main className="min-h-screen flex items-center justify-center px-4">
-        <p className="text-gray-600 dark:text-fuchsia-100/80 text-center">
-          Loading...
-        </p>
-      </main>
-    );
-  }
-
-  if (error) {
-    return (
-      <main className="min-h-screen flex items-center justify-center px-4">
-        <p className="text-red-500 dark:text-red-400 text-center">{error}</p>
-      </main>
-    );
-  }
-
-  if (!module) {
-    return (
-      <main className="min-h-screen flex items-center justify-center px-4">
-        <p className="text-gray-600 dark:text-fuchsia-100/80 text-center">
-          Module not found.
-        </p>
-      </main>
-    );
-  }
+  if (loading) return <main style={{ minHeight: "100vh", background: "#f0eeff", display: "flex", alignItems: "center", justifyContent: "center" }}><p style={{ color: "#7F77DD" }}>Loading...</p></main>;
+  if (error || !module) return <main style={{ minHeight: "100vh", background: "#f0eeff", display: "flex", alignItems: "center", justifyContent: "center" }}><p style={{ color: "#A32D2D" }}>{error || "Module not found."}</p></main>;
 
   return (
-    <main className="min-h-screen flex justify-center px-4 py-10">
-      <div className="w-full max-w-3xl rounded-3xl shadow-2xl px-6 py-8 md:px-10 md:py-10 bg-gradient-to-b from-fuchsia-50 to-fuchsia-100 text-gray-800 dark:bg-gradient-to-b dark:from-purple-900 dark:to-fuchsia-900 dark:text-fuchsia-100">
-        <header className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-fuchsia-700 dark:text-fuchsia-100">
-            {module.title}
-          </h1>
-          {module.description && (
-            <p className="mt-2 text-sm md:text-base text-gray-700 dark:text-fuchsia-100/80">
-              {module.description}
-            </p>
-          )}
-        </header>
+    <main style={{ minHeight: "100vh", background: "#f0eeff", position: "relative", overflowX: "hidden" }}>
+      {BUBBLES.map((b, i) => (
+        <div key={i} style={{
+          position: "absolute", borderRadius: "50%",
+          background: "rgba(255,255,255,0.35)", border: "1px solid rgba(255,255,255,0.55)",
+          width: b.w, height: b.h,
+          top: (b as any).top ?? "auto", bottom: (b as any).bottom ?? "auto",
+          left: (b as any).left ?? "auto", right: (b as any).right ?? "auto",
+          pointerEvents: "none", zIndex: 0,
+        }} />
+      ))}
 
-        <div className="mb-6">
-          <div className="w-full h-3 bg-gray-300 rounded-full dark:bg-white/20">
-            <div
-              className="h-3 bg-green-500 rounded-full transition-all"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-          <p className="text-sm mt-1 text-gray-700 dark:text-fuchsia-100/80">
-            {completedCount}/{totalCount} Lessons Completed
-          </p>
+      <div style={{ position: "relative", zIndex: 1, maxWidth: 700, margin: "0 auto", padding: "64px 24px 80px" }}>
+        <div style={{ marginBottom: 32, display: "flex", gap: 10 }}>
+          <button onClick={() => router.back()} style={{
+            fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
+            padding: "8px 16px", borderRadius: 10, border: "0.5px solid rgba(180,160,240,0.4)",
+            background: "rgba(255,255,255,0.55)", color: "#534AB7", cursor: "pointer",
+          }}>← Back</button>
+          {courseid && (
+            <Link href={`/courses/${courseid}`} style={{
+              fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
+              padding: "8px 16px", borderRadius: 10, border: "0.5px solid rgba(180,160,240,0.4)",
+              background: "rgba(255,255,255,0.55)", color: "#534AB7", textDecoration: "none",
+            }}>Course overview</Link>
+          )}
         </div>
 
-        <section className="mb-8">
-          <h2 className="text-2xl font-semibold text-fuchsia-700 dark:text-fuchsia-100 mb-4">
-            Lessons
-          </h2>
+        <div style={{ background: "rgba(255,255,255,0.55)", border: "0.5px solid rgba(255,255,255,0.8)", borderRadius: 24, padding: "32px 28px" }}>
+          <header style={{ marginBottom: 28 }}>
+            <h1 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 500, color: "#26215C", margin: "0 0 8px" }}>{module.title}</h1>
+            {module.description && <p style={{ fontSize: 15, color: "#534AB7", lineHeight: 1.7, margin: 0 }}>{module.description}</p>}
+          </header>
+
+          {/* Progress bar */}
+          <div style={{ marginBottom: 28 }}>
+            <div style={{ height: 6, background: "rgba(180,160,240,0.2)", borderRadius: 99, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${progressPercent}%`, background: "#534AB7", borderRadius: 99, transition: "width 0.4s ease" }} />
+            </div>
+            <p style={{ fontSize: 12, color: "#7F77DD", margin: "6px 0 0" }}>{completedLessons.length}/{lessons.length} lessons completed</p>
+          </div>
+
+          <div style={{ height: "0.5px", background: "rgba(180,160,240,0.25)", marginBottom: 24 }} />
+
+          <h2 style={{ fontSize: 16, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: "#7F77DD", margin: "0 0 16px" }}>Lessons</h2>
 
           {lessons.length === 0 ? (
-            <p className="text-sm text-gray-600 dark:text-fuchsia-100/80">
-              No lessons available for this module yet.
-            </p>
+            <p style={{ fontSize: 14, color: "#7F77DD" }}>No lessons available yet.</p>
           ) : (
-            <ul className="space-y-4">
-              {lessons.map((lesson) => {
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {lessons.map(lesson => {
                 const isCompleted = completedLessons.includes(lesson.id);
                 return (
-                  <li key={lesson.id}>
-                    <Link
-                      href={`/courses/${courseid}/${moduleid}/${lesson.id}`}
-                      className={`block p-4 rounded-2xl transition shadow-sm hover:shadow-md hover:scale-[1.01] ${
-                        isCompleted
-                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                          : "bg-white text-fuchsia-700 dark:bg-white/5 dark:text-fuchsia-50"
-                      }`}
-                    >
-                      <span className="font-medium">{lesson.title}</span>
-                    </Link>
-                  </li>
+                  <Link key={lesson.id} href={`/courses/${courseid}/${moduleid}/${lesson.id}`} style={{
+                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                    padding: "14px 18px", borderRadius: 14, textDecoration: "none",
+                    background: isCompleted ? "rgba(59,109,17,0.08)" : "rgba(180,160,240,0.1)",
+                    border: `0.5px solid ${isCompleted ? "rgba(59,109,17,0.2)" : "rgba(180,160,240,0.25)"}`,
+                  }}>
+                    <span style={{ fontSize: 14, fontWeight: 400, color: isCompleted ? "#3B6D11" : "#3C3489" }}>
+                      {isCompleted ? "✓ " : ""}{lesson.title}
+                    </span>
+                    <span style={{ fontSize: 12, color: isCompleted ? "#3B6D11" : "#7F77DD" }}>
+                      {isCompleted ? "Done" : "Start →"}
+                    </span>
+                  </Link>
                 );
               })}
-            </ul>
-          )}
-        </section>
-
-        <div className="mt-6 flex flex-wrap gap-3">
-          <button
-            onClick={() => router.back()}
-            className="px-4 py-2 rounded-lg text-sm font-medium border border-fuchsia-300 text-fuchsia-700 bg-white/70 hover:bg-white transition dark:bg-transparent dark:border-fuchsia-200 dark:text-fuchsia-100 dark:hover:bg-white/5"
-          >
-            Back
-          </button>
-
-          {courseid && (
-            <Link
-              href={`/courses/${courseid}`}
-              className="px-4 py-2 rounded-lg text-sm font-medium bg-fuchsia-600 text-white hover:bg-fuchsia-700 transition"
-            >
-              Back to Course
-            </Link>
+            </div>
           )}
         </div>
       </div>

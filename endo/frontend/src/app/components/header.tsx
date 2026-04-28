@@ -50,138 +50,214 @@ export default function Header() {
 
   useEffect(() => {
     if (!open) return;
-
     function handleClickOutside(event: MouseEvent) {
       const target = event.target as Node;
       if (
-        menuRef.current &&
-        !menuRef.current.contains(target) &&
-        buttonRef.current &&
-        !buttonRef.current.contains(target)
+        menuRef.current && !menuRef.current.contains(target) &&
+        buttonRef.current && !buttonRef.current.contains(target)
       ) {
         setOpen(false);
       }
     }
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open]);
 
+  const navLink = (href: string, label: string) => (
+    <Link
+      key={href}
+      href={href}
+      onClick={() => setOpen(false)}
+      style={{
+        fontSize: 14,
+        fontWeight: pathname === href ? 500 : 400,
+        color: pathname === href ? "#26215C" : "#534AB7",
+        textDecoration: "none",
+        padding: "6px 12px",
+        borderRadius: 10,
+        background: pathname === href ? "rgba(180,160,240,0.2)" : "transparent",
+        whiteSpace: "nowrap" as const,
+      }}
+    >
+      {label}
+    </Link>
+  );
+
   return (
-    <header className="bg-[#efefef] shadow-[inset_0px_-3px_4px_rgba(0,0,0,0.2)]">
-      <nav className="container mx-auto flex justify-between items-center px-4 py-6 relative">
-        <Link href="/" className="flex items-center">
-          <Image
-            src="/logo.png"
-            alt="Health Learn Logo"
-            width={140}
-            height={40}
-            priority
-          />
+    <header style={{
+      background: "rgba(240, 238, 255, 0.85)",
+      backdropFilter: "blur(12px)",
+      borderBottom: "0.5px solid rgba(180,160,240,0.3)",
+      position: "sticky",
+      top: 0,
+      zIndex: 100,
+    }}>
+      <nav style={{
+        maxWidth: 1100,
+        margin: "0 auto",
+        padding: "14px 12px 14px 0",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        position: "relative",
+      }}>
+        {/* Logo — left aligned */}
+        <Link href="/" style={{ flexShrink: 0 }}>
+          <Image src="/logo.png" alt="Logo" width={110} height={32} priority />
         </Link>
 
+        {/* ===== Desktop nav ===== */}
+<div style={{
+  display: "flex",
+  alignItems: "center",
+  gap: 4,
+}} className="desktop-nav">
+  {navLink("/courses", "Courses")}
+  {navLink("/profile", "Profile")}
+
+  {!isLoggedIn ? (
+    <>
+      {navLink("/login", "Log in")}
+      <Link href="/signup" style={{
+        fontSize: 15,
+        fontWeight: 700,
+        letterSpacing: "0.07em",
+        textTransform: "uppercase",
+        color: "#fff",
+        background: "#534AB7",
+        padding: "7px 18px",
+        borderRadius: 10,
+        textDecoration: "none",
+        marginLeft: 8,
+        boxShadow: "0 2px 10px rgba(83,74,183,0.25)",
+      }}>
+        Sign up
+      </Link>
+    </>
+  ) : (
+    <button
+      onClick={handleLogout}
+      style={{
+        fontSize: 13,
+        fontWeight: 700,
+        letterSpacing: "0.07em",
+        textTransform: "uppercase",
+        color: "#A32D2D",
+        background: "transparent",
+        border: "0.5px solid rgba(163,45,45,0.3)",
+        padding: "6px 14px",
+        borderRadius: 10,
+        cursor: "pointer",
+        marginLeft: 8,
+      }}
+    >
+      Log out
+    </button>
+  )}
+</div>
+        {/* ===== Mobile hamburger ===== */}
         <button
           ref={buttonRef}
           type="button"
           onClick={() => setOpen((prev) => !prev)}
-          className="inline-flex flex-col justify-center items-center gap-[3px] p-2 rounded-full border border-fuchsia-300 hover:bg-fuchsia-50 transition"
           aria-label="Open navigation menu"
+          className="mobile-nav-btn"
+          style={{
+            display: "none",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 4,
+            padding: "8px 10px",
+            borderRadius: 12,
+            border: "0.5px solid rgba(180,160,240,0.5)",
+            background: "rgba(255,255,255,0.6)",
+            cursor: "pointer",
+          }}
         >
-          <span className="w-5 h-[2px] bg-fuchsia-600 rounded" />
-          <span className="w-5 h-[2px] bg-fuchsia-600 rounded" />
-          <span className="w-5 h-[2px] bg-fuchsia-600 rounded" />
+          {[0,1,2].map(i => (
+            <span key={i} style={{
+              display: "block",
+              width: 18,
+              height: 2,
+              borderRadius: 2,
+              background: "#534AB7",
+            }} />
+          ))}
         </button>
 
+        {/* Mobile dropdown */}
         {open && (
           <div
             ref={menuRef}
-            className="
-              fixed
-              right-4 top-22
-              w-52
-              rounded-3xl
-              bg-gradient-to-b from-fuchsia-50 to-fuchsia-100
-              shadow-2xl
-              border border-fuchsia-200/70
-              z-50
-              p-4
-            "
+            style={{
+              position: "fixed",
+              right: 16,
+              top: 68,
+              width: 200,
+              borderRadius: 20,
+              background: "rgba(245, 242, 255, 0.95)",
+              backdropFilter: "blur(16px)",
+              border: "0.5px solid rgba(180,160,240,0.4)",
+              boxShadow: "0 8px 32px rgba(83,74,183,0.15)",
+              zIndex: 200,
+              padding: 16,
+            }}
           >
             {isLoggedIn && (
-              <div className="mb-3 border-b border-fuchsia-100 pb-3">
-                <p className="text-xs uppercase tracking-wide text-gray-500">
-                  Currently signed in
+              <div style={{
+                marginBottom: 12,
+                paddingBottom: 12,
+                borderBottom: "0.5px solid rgba(180,160,240,0.3)",
+              }}>
+                <p style={{ fontSize: 10, color: "#7F77DD", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 4px" }}>
+                  Signed in as
                 </p>
-                <p className="mt-1 font-semibold text-fuchsia-800">
+                <p style={{ fontSize: 14, fontWeight: 500, color: "#26215C", margin: 0 }}>
                   {role === "admin" ? "Admin" : "Member"}
                 </p>
               </div>
             )}
 
-            <div className="flex flex-col gap-1 text-sm">
-              <Link
-                href="/profile"
-                onClick={() => setOpen(false)}
-                className={`px-2 py-2 rounded-lg transition ${
-                  pathname === "/profile"
-                    ? "bg-fuchsia-200 text-fuchsia-800"
-                    : "hover:bg-fuchsia-100 text-gray-800"
-                }`}
-              >
-                Profile{isLoggedIn && role === "admin" ? " (Admin)" : ""}
-              </Link>
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              {navLink("/courses", "Courses")}
+              {navLink("/profile", "Profile")}
 
-              <Link
-                href="/courses"
-                onClick={() => setOpen(false)}
-                className={`px-2 py-2 rounded-lg transition ${
-                  pathname === "/courses"
-                    ? "bg-fuchsia-200 text-fuchsia-800"
-                    : "hover:bg-fuchsia-100 text-gray-800"
-                }`}
-              >
-                Course Catalogue
-              </Link>
-
-              {!isLoggedIn && (
+              {!isLoggedIn ? (
                 <>
-                  <Link
-                    href="/login"
-                    onClick={() => setOpen(false)}
-                    className={`px-2 py-2 rounded-lg transition ${
-                      pathname === "/login"
-                        ? "bg-fuchsia-200 text-fuchsia-800"
-                        : "hover:bg-fuchsia-100 text-gray-800"
-                    }`}
-                  >
-                    Log In
-                  </Link>
-                  <Link
-                    href="/signup"
-                    onClick={() => setOpen(false)}
-                    className={`px-2 py-2 rounded-lg transition ${
-                      pathname === "/signup"
-                        ? "bg-fuchsia-200 text-fuchsia-800"
-                        : "hover:bg-fuchsia-100 text-gray-800"
-                    }`}
-                  >
-                    Sign Up
-                  </Link>
+                  {navLink("/login", "Log in")}
+                  {navLink("/signup", "Sign up")}
                 </>
-              )}
-
-              {isLoggedIn && (
+              ) : (
                 <button
                   onClick={handleLogout}
-                  className="mt-1 px-2 py-2 rounded-lg text-left text-red-600 hover:bg-red-50 transition"
+                  style={{
+                    marginTop: 8,
+                    padding: "8px 10px",
+                    borderRadius: 10,
+                    fontSize: 14,
+                    color: "#A32D2D",
+                    background: "transparent",
+                    border: "none",
+                    textAlign: "left",
+                    cursor: "pointer",
+                  }}
                 >
-                  Log Out
+                  Log out
                 </button>
               )}
             </div>
           </div>
         )}
       </nav>
+
+      {/* Responsive styles */}
+      <style>{`
+        @media (max-width: 640px) {
+          .desktop-nav { display: none !important; }
+          .mobile-nav-btn { display: flex !important; }
+        }
+      `}</style>
     </header>
   );
 }

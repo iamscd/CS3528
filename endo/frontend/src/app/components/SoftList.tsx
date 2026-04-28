@@ -30,21 +30,21 @@ export default function SoftList({ variant, items, role }: SoftListProps) {
     <div className="space-y-6">
       {/* ===== View Switch ===== */}
       <div className="flex gap-2">
-        <SoftButton
-          width="w-auto"
-          onClick={() => setView("catalogue")}
-          disabled={view === "catalogue"}
-        >
-          Grid
-        </SoftButton>
+      <SoftButton
+        width="w-auto"
+        onClick={() => setView("catalogue")}
+        active={view === "catalogue"}
+      >
+        Grid
+      </SoftButton>
 
-        <SoftButton
-          width="w-auto"
-          onClick={() => setView("list")}
-          disabled={view === "list"}
-        >
-          List
-        </SoftButton>
+      <SoftButton
+        width="w-auto"
+        onClick={() => setView("list")}
+        active={view === "list"}
+      >
+        List
+      </SoftButton>
       </div>
 
       {/* ===== Catalogue / List View ===== */}

@@ -5,6 +5,7 @@ import React from "react";
 
 interface BaseProps {
   disabled?: boolean;
+  active?: boolean;
   children: React.ReactNode;
   width?: string;
   onClick?: () => void;
@@ -23,6 +24,7 @@ type SoftButtonProps = LinkButtonProps | ActionButtonProps;
 export default function SoftButton({
   href,
   disabled = false,
+  active = false,
   children,
   width = "w-full",
   onClick,
@@ -31,11 +33,12 @@ export default function SoftButton({
     ${width} inline-flex relative items-center justify-center
     text-center py-3 px-4
     rounded-2xl
-    text-sm font-medium text-gray-800
-    bg-[#efefef]
-    shadow-[-10px_10px_16px_rgba(0,0,0,0.2),10px_-10px_16px_rgba(255,255,255,0.9),inset_-1px_1px_1px_rgba(255,255,255,0.8),inset_1px_-1px_1px_rgba(0,0,0,0.1)]
-    transition-shadow duration-200
-    active:shadow-[inset_6px_6px_12px_rgba(0,0,0,0.2),inset_-6px_-6px_12px_rgba(255,255,255,0.8)]
+    text-sm font-medium
+    transition-all duration-200
+    ${active
+      ? "bg-[#d0d0d0] text-gray-900 shadow-[inset_4px_4px_10px_rgba(0,0,0,0.2),inset_-2px_-2px_6px_rgba(255,255,255,0.6)]"
+      : "bg-[#efefef] text-gray-800 shadow-[-10px_10px_16px_rgba(0,0,0,0.2),10px_-10px_16px_rgba(255,255,255,0.9),inset_-1px_1px_1px_rgba(255,255,255,0.8),inset_1px_-1px_1px_rgba(0,0,0,0.1)]"
+    }
     ${disabled ? "opacity-50 pointer-events-none" : ""}
   `;
 
