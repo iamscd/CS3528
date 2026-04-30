@@ -33,11 +33,11 @@ export default function ModulePage() {
 
     const fetchData = async () => {
       try {
-        const moduleRes = await fetch(`http://127.0.0.1:5000/modules/${moduleid}`, { headers: { Authorization: `Bearer ${token}` } });
+        const moduleRes = await fetch(`process.env.NEXT_PUBLIC_API_URL/modules/${moduleid}`, { headers: { Authorization: `Bearer ${token}` } });
         if (!moduleRes.ok) throw new Error("Module not found");
         const moduleData = await moduleRes.json();
 
-        const lessonsRes = await fetch(`http://127.0.0.1:5000/modules/${moduleid}/lessons`, { headers: { Authorization: `Bearer ${token}` } });
+        const lessonsRes = await fetch(`process.env.NEXT_PUBLIC_API_URL/modules/${moduleid}/lessons`, { headers: { Authorization: `Bearer ${token}` } });
         const lessonsData = lessonsRes.ok ? await lessonsRes.json() : [];
 
         setModule(moduleData);
@@ -45,7 +45,7 @@ export default function ModulePage() {
 
         const progressResults = await Promise.all(
           lessonsData.map((lesson: Lesson) =>
-            fetch(`http://127.0.0.1:5000/lessons/${lesson.id}/progress`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json())
+            fetch(`process.env.NEXT_PUBLIC_API_URL/lessons/${lesson.id}/progress`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json())
           )
         );
         setCompletedLessons(progressResults.map((p, idx) => p.is_completed ? lessonsData[idx].id : null).filter(Boolean) as number[]);

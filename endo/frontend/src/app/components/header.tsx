@@ -23,7 +23,7 @@ export default function Header() {
     setRole(storedRole);
 
     if (storedToken) {
-      fetch("http://127.0.0.1:5000/api/user/profile", {
+      fetch("process.env.NEXT_PUBLIC_API_URL/api/user/profile", {
         headers: { Authorization: `Bearer ${storedToken}` },
       }).then((res) => {
         if (res.status === 401) {

@@ -61,7 +61,7 @@ export const QuizSection = ({ quizzes, lessonId }: Props) => {
     setPassed(allCorrect);
 
     if (allCorrect) {
-      await fetch(`http://127.0.0.1:5000/lessons/${lessonId}/progress`, {
+      await fetch(`process.env.NEXT_PUBLIC_API_URL/lessons/${lessonId}/progress`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });

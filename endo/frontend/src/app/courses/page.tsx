@@ -45,7 +45,7 @@ export default function CoursesPage() {
 
     const fetchCoursesAndProgress = async () => {
       try {
-        const res = await fetch("http://127.0.0.1:5000/courses", { headers });
+        const res = await fetch("process.env.NEXT_PUBLIC_API_URL/courses", { headers });
         if (!res.ok) throw new Error("Failed to fetch courses");
         const data = await res.json();
 
@@ -60,7 +60,7 @@ export default function CoursesPage() {
         await Promise.all(
           mapped.map(async (course) => {
             const modulesRes = await fetch(
-              `http://127.0.0.1:5000/courses/${course.course_id}/modules`,
+              `process.env.NEXT_PUBLIC_API_URL/courses/${course.course_id}/modules`,
               { headers }
             );
             const modules = modulesRes.ok ? await modulesRes.json() : [];
@@ -68,7 +68,7 @@ export default function CoursesPage() {
 
             for (const module of modules) {
               const lessonsRes = await fetch(
-                `http://127.0.0.1:5000/modules/${module.id}/lessons`,
+                `process.env.NEXT_PUBLIC_API_URL/modules/${module.id}/lessons`,
                 { headers }
               );
               const lessons = lessonsRes.ok ? await lessonsRes.json() : [];
@@ -76,7 +76,7 @@ export default function CoursesPage() {
 
               const progressChecks = await Promise.all(
                 lessons.map((lesson: any) =>
-                  fetch(`http://127.0.0.1:5000/lessons/${lesson.id}/progress`, { headers }).then((r) => r.json())
+                  fetch(`process.env.NEXT_PUBLIC_API_URL/lessons/${lesson.id}/progress`, { headers }).then((r) => r.json())
                 )
               );
               if (progressChecks.every((p) => p.is_completed)) completedModules++;
@@ -206,7 +206,7 @@ export default function CoursesPage() {
                           e.preventDefault();
                           if (!confirm(`Delete "${course.title}"?`)) return;
                           const token = localStorage.getItem("access_token");
-                          const res = await fetch(`http://127.0.0.1:5000/courses/${course.course_id}`, {
+                          const res = await fetch(`process.env.NEXT_PUBLIC_API_URL/courses/${course.course_id}`, {
                             method: "DELETE",
                             headers: { Authorization: `Bearer ${token}` },
                           });

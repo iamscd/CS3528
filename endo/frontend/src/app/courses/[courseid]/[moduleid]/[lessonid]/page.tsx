@@ -95,7 +95,7 @@ export default function LessonPage() {
     const fetchLessonData = async () => {
       setLoading(true);
       try {
-        const lessonRes = await fetch(`http://127.0.0.1:5000/lessons/${lessonIdParam}`, {
+        const lessonRes = await fetch(`process.env.NEXT_PUBLIC_API_URL/lessons/${lessonIdParam}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!lessonRes.ok) throw new Error("Lesson not found");
@@ -104,7 +104,7 @@ export default function LessonPage() {
         setEditTitle(lessonData.title);
         setEditContent(lessonData.text_content || "");
 
-        const quizRes = await fetch(`http://127.0.0.1:5000/lessons/${lessonIdParam}/quizzes`, {
+        const quizRes = await fetch(`process.env.NEXT_PUBLIC_API_URL/lessons/${lessonIdParam}/quizzes`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (quizRes.ok) {
@@ -117,7 +117,7 @@ export default function LessonPage() {
         }
 
         if (moduleIdParam) {
-          const moduleRes = await fetch(`http://127.0.0.1:5000/modules/${moduleIdParam}/lessons`, {
+          const moduleRes = await fetch(`process.env.NEXT_PUBLIC_API_URL/modules/${moduleIdParam}/lessons`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (moduleRes.ok) setModuleLessons(await moduleRes.json());
@@ -143,13 +143,13 @@ export default function LessonPage() {
       if (lesson.content_type === "text") payload.append("text_content", editContent);
       if (editMediaFile) payload.append("media", editMediaFile);
 
-      const res = await fetch(`http://127.0.0.1:5000/lessons/${lesson.id}`, {
+      const res = await fetch(`process.env.NEXT_PUBLIC_API_URL/lessons/${lesson.id}`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` },
         body: payload,
       });
       if (!res.ok) throw new Error("Failed to save");
-      const updated = await fetch(`http://127.0.0.1:5000/lessons/${lesson.id}`, {
+      const updated = await fetch(`process.env.NEXT_PUBLIC_API_URL/lessons/${lesson.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setLesson(await updated.json());
@@ -165,7 +165,7 @@ export default function LessonPage() {
     payload.append("title", lesson.title);
     payload.append("content_type", "text");
     payload.append("text_content", lesson.text_content || "");
-    const res = await fetch(`http://127.0.0.1:5000/lessons/${lesson.id}`, {
+    const res = await fetch(`process.env.NEXT_PUBLIC_API_URL/lessons/${lesson.id}`, {
       method: "PUT", headers: { Authorization: `Bearer ${token}` }, body: payload,
     });
     if (res.ok) setLesson(prev => prev ? { ...prev, content_url: null, media_kind: null } : prev);
@@ -184,12 +184,12 @@ export default function LessonPage() {
     const token = localStorage.getItem("access_token");
     try {
       // Delete old and recreate — simplest approach since there's no PUT /quizzes/:id
-      const delRes = await fetch(`http://127.0.0.1:5000/quizzes/${quizId}`, {
+      const delRes = await fetch(`process.env.NEXT_PUBLIC_API_URL/quizzes/${quizId}`, {
         method: "DELETE", headers: { Authorization: `Bearer ${token}` },
       });
       if (!delRes.ok) throw new Error("Failed to delete old question");
 
-      const createRes = await fetch("http://127.0.0.1:5000/quizzes", {
+      const createRes = await fetch("process.env.NEXT_PUBLIC_API_URL/quizzes", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -213,7 +213,7 @@ export default function LessonPage() {
   const deleteQuiz = async (quizId: number) => {
     if (!confirm("Delete this question?")) return;
     const token = localStorage.getItem("access_token");
-    const res = await fetch(`http://127.0.0.1:5000/quizzes/${quizId}`, {
+    const res = await fetch(`process.env.NEXT_PUBLIC_API_URL/quizzes/${quizId}`, {
       method: "DELETE", headers: { Authorization: `Bearer ${token}` },
     });
     if (res.ok) setQuizzes(prev => prev.filter(q => q.id !== quizId));
@@ -225,7 +225,7 @@ export default function LessonPage() {
     setSavingNewQuiz(true);
     const token = localStorage.getItem("access_token");
     try {
-      const res = await fetch("http://127.0.0.1:5000/quizzes", {
+      const res = await fetch("process.env.NEXT_PUBLIC_API_URL/quizzes", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({

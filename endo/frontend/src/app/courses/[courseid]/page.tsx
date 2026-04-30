@@ -34,7 +34,7 @@ export default function CoursePage() {
     const token = localStorage.getItem("access_token");
     setRole(localStorage.getItem("role"));
     const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
-    fetch("http://127.0.0.1:5000/courses", { headers })
+    fetch("process.env.NEXT_PUBLIC_API_URL/courses", { headers })
       .then(r => r.ok && r.json()).then(d => d && setCourses(d)).catch(console.error);
   }, []);
 
@@ -46,11 +46,11 @@ export default function CoursePage() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const courseRes = await fetch(`http://127.0.0.1:5000/courses/${courseid}`, { headers });
+        const courseRes = await fetch(`process.env.NEXT_PUBLIC_API_URL/courses/${courseid}`, { headers });
         if (!courseRes.ok) throw new Error("Course not found");
         setCourse(await courseRes.json());
 
-        const modulesRes = await fetch(`http://127.0.0.1:5000/courses/${courseid}/modules`, { headers });
+        const modulesRes = await fetch(`process.env.NEXT_PUBLIC_API_URL/courses/${courseid}/modules`, { headers });
         const modulesData: Module[] = modulesRes.ok ? await modulesRes.json() : [];
         setModules(modulesData);
 
@@ -58,12 +58,12 @@ export default function CoursePage() {
         const progressObj: { [key: number]: number } = {};
 
         await Promise.all(modulesData.map(async (module) => {
-          const lr = await fetch(`http://127.0.0.1:5000/modules/${module.id}/lessons`, { headers });
+          const lr = await fetch(`process.env.NEXT_PUBLIC_API_URL/modules/${module.id}/lessons`, { headers });
           const ld: Lesson[] = lr.ok ? await lr.json() : [];
           lessonsObj[module.id] = ld;
           if (!ld.length) { progressObj[module.id] = 0; return; }
           const pr = await Promise.all(ld.map(l =>
-            fetch(`http://127.0.0.1:5000/lessons/${l.id}/progress`, { headers }).then(r => r.json())
+            fetch(`process.env.NEXT_PUBLIC_API_URL/lessons/${l.id}/progress`, { headers }).then(r => r.json())
           ));
           progressObj[module.id] = pr.filter(p => p.is_completed).length / ld.length;
         }));
@@ -175,7 +175,7 @@ export default function CoursePage() {
                             onClick={async () => {
                               if (!confirm(`Delete module "${module.title}" and all its lessons?`)) return;
                               const token = localStorage.getItem("access_token");
-                              const res = await fetch(`http://127.0.0.1:5000/modules/${module.id}`, {
+                              const res = await fetch(`process.env.NEXT_PUBLIC_API_URL/modules/${module.id}`, {
                                 method: "DELETE",
                                 headers: { Authorization: `Bearer ${token}` },
                               });
@@ -216,7 +216,7 @@ export default function CoursePage() {
                                       onClick={async () => {
                                         if (!confirm(`Delete "${lesson.title}"?`)) return;
                                         const token = localStorage.getItem("access_token");
-                                        const res = await fetch(`http://127.0.0.1:5000/lessons/${lesson.id}`, {
+                                        const res = await fetch(`process.env.NEXT_PUBLIC_API_URL/lessons/${lesson.id}`, {
                                           method: "DELETE",
                                           headers: { Authorization: `Bearer ${token}` },
                                         });
