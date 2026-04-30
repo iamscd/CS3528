@@ -39,7 +39,7 @@ export default function EditCoursePage() {
     const role = localStorage.getItem("role");
     if (!token || role !== "admin") { router.push("/"); return; }
 
-    fetch(`process.env.NEXT_PUBLIC_API_URL/courses/${courseid}`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses/${courseid}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => r.json())
@@ -61,7 +61,7 @@ export default function EditCoursePage() {
       payload.append("description", description);
       if (newImageFile) payload.append("image", newImageFile);
 
-      const res = await fetch(`process.env.NEXT_PUBLIC_API_URL/courses/${courseid}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses/${courseid}`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` },
         body: payload,
@@ -80,7 +80,7 @@ export default function EditCoursePage() {
       payload.append("title", title);
       payload.append("description", description);
       payload.append("image_url", "");
-      const res = await fetch(`process.env.NEXT_PUBLIC_API_URL/courses/${courseid}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses/${courseid}`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` },
         body: payload,
