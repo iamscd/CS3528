@@ -45,7 +45,7 @@ export default function CoursesPage() {
 
     const fetchCoursesAndProgress = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses", { headers });
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses`, { headers });
         if (!res.ok) throw new Error("Failed to fetch courses");
         const data = await res.json();
 

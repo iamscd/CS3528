@@ -189,7 +189,7 @@ export default function LessonPage() {
       });
       if (!delRes.ok) throw new Error("Failed to delete old question");
 
-      const createRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/quizzes", {
+      const createRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/quizzes`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -225,7 +225,7 @@ export default function LessonPage() {
     setSavingNewQuiz(true);
     const token = localStorage.getItem("access_token");
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/quizzes", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/quizzes`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({

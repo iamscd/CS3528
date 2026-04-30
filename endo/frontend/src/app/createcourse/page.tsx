@@ -53,7 +53,7 @@ export default function ModuleCreatorPage() {
     const storedToken = localStorage.getItem("access_token");
     if (!storedToken) { router.push("/login"); return; }
     setToken(storedToken);
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/profile", { headers: { Authorization: `Bearer ${storedToken}` } })
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/profile`, { headers: { Authorization: `Bearer ${storedToken}` } })
       .then(res => { if (!res.ok) throw new Error(); return res.json(); })
       .then(data => { if (data.role !== "admin") router.push("/"); })
       .catch(() => router.push("/login"))
@@ -120,12 +120,13 @@ export default function ModuleCreatorPage() {
       coursePayload.append("description", description);
       if (courseImage) coursePayload.append("image", courseImage);
 
-      const courseRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses", { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: coursePayload });
+      const courseRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: coursePayload });
       if (!courseRes.ok) throw new Error("Failed to create course");
       const { course_id: courseId } = await courseRes.json();
 
       for (const moduleItem of modules) {
-        const moduleRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/modules", { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ title: moduleItem.title, description: moduleItem.description, course_id: courseId }) });
+        const moduleRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/modules`, {
+ method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ title: moduleItem.title, description: moduleItem.description, course_id: courseId }) });
         if (!moduleRes.ok) throw new Error(`Failed to create module "${moduleItem.title}"`);
         const { module_id: moduleId } = await moduleRes.json();
 
@@ -137,7 +138,7 @@ export default function ModuleCreatorPage() {
           if (lesson.contentType === "text") lessonPayload.append("text_content", lesson.content);
           if (lesson.mediaFile) lessonPayload.append("media", lesson.mediaFile);
 
-          const lessonRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/lessons", { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: lessonPayload });
+          const lessonRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/lessons`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: lessonPayload });
           if (!lessonRes.ok) throw new Error(`Failed to create lesson "${lesson.title}"`);
           const { lesson_id: lessonId } = await lessonRes.json();
 
@@ -145,7 +146,7 @@ export default function ModuleCreatorPage() {
             const payload: Record<string, unknown> = { lesson_id: lessonId, question: q.question };
             if (q.type === "multiple_choice") { payload.options = q.options; payload.correct_option = q.correctAnswer; }
             else { payload.correct_numeric_answer = q.correctNumericAnswer; }
-            const quizRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/quizzes", { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+            const quizRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/quizzes`, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify(payload) });
             if (!quizRes.ok) throw new Error(`Failed to create quiz for "${lesson.title}"`);
           }
         }

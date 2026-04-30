@@ -34,7 +34,7 @@ export default function CoursePage() {
     const token = localStorage.getItem("access_token");
     setRole(localStorage.getItem("role"));
     const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses", { headers })
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses`, { headers })
       .then(r => r.ok && r.json()).then(d => d && setCourses(d)).catch(console.error);
   }, []);
 
