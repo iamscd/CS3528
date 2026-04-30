@@ -18,13 +18,22 @@ def get_quiz_questions(lesson_id):
     if not questions:
         return flask.jsonify({"message": "No quiz questions found for this lesson"}), 404
 
+    letter_to_index = {"A": 0, "B": 1, "C": 2, "D": 3}
+
     result = []
     for q in questions:
+        options = q.options or []
+        if q.correct_option and options:
+            idx = letter_to_index.get(q.correct_option)
+            correct_option_text = options[idx] if idx is not None and idx < len(options) else q.correct_option
+        else:
+            correct_option_text = q.correct_option
+
         result.append({
             "id": q.id,
             "question": q.question,
-            "options": q.options,
-            "correct_option": q.correct_option,
+            "options": options,
+            "correct_option": correct_option_text,
             "correct_numeric_answer": q.correct_numeric_answer
         })
 

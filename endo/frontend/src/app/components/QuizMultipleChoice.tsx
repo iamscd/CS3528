@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 
 interface MultipleChoiceQuiz {
   id: number;
@@ -26,51 +26,72 @@ export const QuizMultipleChoice = ({
   const options = quiz.options ?? [];
   const correct = quiz.correct_option;
 
+  const containerStyle: React.CSSProperties = {
+    background: "rgba(180,160,240,0.08)",
+    border: "0.5px solid rgba(180,160,240,0.2)",
+    borderRadius: 14,
+    padding: 20,
+  };
+
+  const getOptionStyle = (option: string): React.CSSProperties => {
+    const base: React.CSSProperties = {
+      width: "100%",
+      textAlign: "left",
+      padding: "8px 14px",
+      borderRadius: 10,
+      fontSize: 14,
+      cursor: submitted ? "default" : "pointer",
+      transition: "background 0.15s",
+      border: "0.5px solid rgba(180,160,240,0.35)",
+      color: "#534AB7",
+      background: "transparent",
+    };
+
+    if (!submitted && answer === option) {
+      return { ...base, background: "rgba(83,74,183,0.12)", border: "0.5px solid rgba(83,74,183,0.5)" };
+    }
+
+    if (submitted) {
+      if (option === correct) {
+        return { ...base, background: "rgba(39,174,96,0.12)", border: "0.5px solid rgba(39,174,96,0.4)", color: "#1a7a3a", cursor: "default" };
+      }
+      if (option === answer && answer !== correct) {
+        return { ...base, background: "rgba(163,45,45,0.1)", border: "0.5px solid rgba(163,45,45,0.35)", color: "#A32D2D", cursor: "default" };
+      }
+      return { ...base, opacity: 0.5, cursor: "default" };
+    }
+
+    return base;
+  };
+
   return (
-    <div className="rounded-2xl p-5 space-y-3 bg-gray-100 shadow-inner">
-      <p className="font-semibold text-gray-800">{quiz.question}</p>
+    <div style={containerStyle}>
+      <p style={{ fontSize: 14, fontWeight: 500, color: "#3C3489", margin: "0 0 12px" }}>{quiz.question}</p>
 
       {options.length ? (
-        <div className="space-y-2">
-          {options.map((option) => {
-            let bgColor = "bg-gray-100";
-            let textColor = "text-gray-700";
-
-            if (!submitted && answer === option) {
-              bgColor = "bg-gray-200";
-            } else if (submitted) {
-              if (option === correct) {
-                bgColor = "bg-green-100";
-                textColor = "text-green-800";
-              } else if (option === answer && answer !== correct) {
-                bgColor = "bg-red-100";
-                textColor = "text-red-800";
-              }
-            }
-
-            return (
-              <button
-                key={option}
-                disabled={submitted}
-                onClick={() => onSelectAnswer(quiz.id, option)}
-                className={`w-full text-left px-4 py-2 rounded-lg ${bgColor} ${textColor} transition`}
-              >
-                {option}
-              </button>
-            );
-          })}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {options.map((option) => (
+            <button
+              key={option}
+              disabled={submitted}
+              onClick={() => onSelectAnswer(quiz.id, option)}
+              style={getOptionStyle(option)}
+            >
+              {option}
+            </button>
+          ))}
         </div>
       ) : (
-        <p className="text-gray-500 italic">No options available</p>
+        <p style={{ fontSize: 13, color: "#7F77DD", fontStyle: "italic" }}>No options available</p>
       )}
 
       {submitted && answer === correct && (
-        <p className="text-green-800 font-medium text-center mt-2">
+        <p style={{ fontSize: 13, fontWeight: 600, color: "#1a7a3a", textAlign: "center", marginTop: 10 }}>
           Correct
         </p>
       )}
       {submitted && answer !== correct && (
-        <p className="text-red-800 font-medium text-center mt-2">
+        <p style={{ fontSize: 13, fontWeight: 600, color: "#A32D2D", textAlign: "center", marginTop: 10 }}>
           Incorrect — Correct Answer: {correct}
         </p>
       )}

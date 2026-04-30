@@ -74,11 +74,33 @@ export const QuizSection = ({ quizzes, lessonId }: Props) => {
     setPassed(null);
   };
 
-  return (
-    <div className="rounded-3xl p-6 md:p-10 bg-[#efefef] shadow-[-12px_12px_24px_rgba(0,0,0,0.2),12px_-12px_24px_rgba(255,255,255,0.9)]">
-      <h2 className="text-2xl font-semibold text-fuchsia-700 mb-4">Quiz</h2>
+  const cardStyle: React.CSSProperties = {
+    background: "rgba(255,255,255,0.55)",
+    border: "0.5px solid rgba(255,255,255,0.8)",
+    borderRadius: 24,
+    padding: "28px 28px",
+  };
 
-      <div className="space-y-4">
+  const primaryBtnStyle: React.CSSProperties = {
+    fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
+    padding: "9px 20px", borderRadius: 10, border: "none",
+    background: "#534AB7", color: "#fff", cursor: "pointer",
+  };
+
+  const secondaryBtnStyle: React.CSSProperties = {
+    fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
+    padding: "9px 20px", borderRadius: 10,
+    border: "0.5px solid rgba(83,74,183,0.3)",
+    background: "transparent", color: "#534AB7", cursor: "pointer",
+  };
+
+  return (
+    <div style={cardStyle}>
+      <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: "#7F77DD", margin: "0 0 20px" }}>
+        Quiz
+      </p>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {quizzes.map((quiz) => {
           const type = getQuizType(quiz);
 
@@ -100,7 +122,6 @@ export const QuizSection = ({ quizzes, lessonId }: Props) => {
           }
 
           if (type === "numeric") {
-            // Ensure correct_numeric_answer is [min, answer, max] or undefined
             const numericQuiz = {
               ...quiz,
               type,
@@ -120,7 +141,7 @@ export const QuizSection = ({ quizzes, lessonId }: Props) => {
           }
 
           return (
-            <p key={quiz.id} className="text-gray-500 italic">
+            <p key={quiz.id} style={{ fontSize: 13, color: "#7F77DD", fontStyle: "italic" }}>
               Invalid quiz data
             </p>
           );
@@ -131,26 +152,23 @@ export const QuizSection = ({ quizzes, lessonId }: Props) => {
         <button
           onClick={submitQuiz}
           disabled={Object.keys(answers).length !== quizzes.length}
-          className="mt-4 px-5 py-2.5 rounded-xl text-sm font-medium text-white bg-fuchsia-600 hover:bg-fuchsia-700 transition disabled:opacity-60"
+          style={{ ...primaryBtnStyle, marginTop: 20, opacity: Object.keys(answers).length !== quizzes.length ? 0.5 : 1 }}
         >
           Submit
         </button>
       )}
 
       {submitted && passed === false && (
-        <div className="space-y-2 mt-2">
-          <p className="text-red-600 font-semibold">Some answers are incorrect.</p>
-          <button
-            onClick={tryAgain}
-            className="px-4 py-2 rounded-xl text-sm font-medium text-white bg-yellow-500 hover:bg-yellow-600 transition"
-          >
-            Try Again
-          </button>
+        <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "#A32D2D", margin: 0 }}>Some answers are incorrect.</p>
+          <div>
+            <button onClick={tryAgain} style={secondaryBtnStyle}>Try Again</button>
+          </div>
         </div>
       )}
 
       {passed && (
-        <p className="text-green-600 font-semibold mt-2">
+        <p style={{ fontSize: 13, fontWeight: 600, color: "#1a7a3a", marginTop: 16 }}>
           Lesson completed successfully.
         </p>
       )}

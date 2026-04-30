@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 
 interface NumericQuiz {
   id: number;
@@ -24,8 +23,6 @@ export const QuizNumeric = ({
   submitted,
   step,
 }: QuizNumericProps) => {
-  const [hover, setHover] = useState(false);
-
   // destructure numeric range: [lower, correctAnswer, upper]
   const [min, correctAnswer, max] = quiz.correct_numeric_answer ?? [0, 0, 100];
 
@@ -35,29 +32,20 @@ export const QuizNumeric = ({
   const percent = ((safeAnswer - min) / (max - min)) * 100;
 
   return (
-    <div
-      className={`
-        p-5 rounded-2xl bg-[#efefef]
-        shadow-[-8px_8px_16px_rgba(0,0,0,0.2),
-                8px_-8px_16px_rgba(255,255,255,0.7),
-                inset_-1px_1px_2px_rgba(255,255,255,0.7),
-                inset_1px_-1px_2px_rgba(0,0,0,0.1)]
-      `}
-    >
-      <p className="text-gray-700 font-medium mb-4">{quiz.question}</p>
+    <div style={{
+      background: "rgba(180,160,240,0.08)",
+      border: "0.5px solid rgba(180,160,240,0.2)",
+      borderRadius: 14,
+      padding: 20,
+    }}>
+      <p style={{ fontSize: 14, fontWeight: 500, color: "#3C3489", margin: "0 0 16px" }}>{quiz.question}</p>
 
-      <div className="relative flex items-center gap-3">
-        <span className="text-gray-500">{min}</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <span style={{ fontSize: 13, color: "#7F77DD" }}>{min}</span>
 
-        <div className="flex-1 relative">
-          {/* Range track background */}
-          <div className="absolute inset-0 h-3 rounded-full bg-[#e0e0e0]"></div>
-          {/* Filled portion */}
-          <div
-            className="absolute h-4 rounded-full bg-fuchsia-300"
-            style={{ width: `${percent}%` }}
-          ></div>
-
+        <div style={{ flex: 1, position: "relative" }}>
+          <div style={{ position: "absolute", top: "50%", left: 0, right: 0, height: 4, borderRadius: 2, background: "rgba(180,160,240,0.2)", transform: "translateY(-50%)" }} />
+          <div style={{ position: "absolute", top: "50%", left: 0, height: 4, borderRadius: 2, background: "#7F77DD", width: `${percent}%`, transform: "translateY(-50%)" }} />
           <input
             type="range"
             min={min}
@@ -66,32 +54,24 @@ export const QuizNumeric = ({
             value={safeAnswer}
             disabled={submitted}
             onChange={(e) => onSelectAnswer(quiz.id, Number(e.target.value))}
-            onMouseEnter={() => setHover(true)}
-            onMouseLeave={() => setHover(false)}
-            className={`
-              relative w-full  appearance-none bg-transparent
-              cursor-pointer
-              ${submitted ? "opacity-60 cursor-not-allowed" : ""}
-            `}
+style={{ position: "relative", width: "100%", appearance: "none", background: "transparent", cursor: submitted ? "not-allowed" : "pointer", opacity: submitted ? 0.7 : 1 }}
           />
         </div>
 
-        <span className="text-gray-500">{max}</span>
+        <span style={{ fontSize: 13, color: "#7F77DD" }}>{max}</span>
       </div>
 
-      {/* Thumb value bubble */}
-      <div
-        className={`
-          mt-3 w-max mx-auto px-3 py-1 rounded-xl text-gray-700 font-semibold
-          bg-[#efefef] shadow-[inset_-1px_-1px_2px_rgba(255,255,255,0.7),
-                               inset_1px_1px_2px_rgba(0,0,0,0.1)]
-        `}
-      >
+      <div style={{
+        marginTop: 12, width: "fit-content", margin: "12px auto 0",
+        padding: "4px 14px", borderRadius: 8,
+        background: "rgba(83,74,183,0.1)", border: "0.5px solid rgba(180,160,240,0.35)",
+        fontSize: 14, fontWeight: 600, color: "#534AB7",
+      }}>
         {safeAnswer}
       </div>
 
       {submitted && answer !== correctAnswer && (
-        <p className="text-red-500 mt-3 text-center font-medium">
+        <p style={{ fontSize: 13, fontWeight: 600, color: "#A32D2D", textAlign: "center", marginTop: 10 }}>
           Correct answer: {correctAnswer}
         </p>
       )}
