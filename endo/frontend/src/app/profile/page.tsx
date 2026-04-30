@@ -47,13 +47,13 @@ export default function ProfilePage() {
 
     const fetchData = async () => {
       try {
-        const profileRes = await fetch('process.env.NEXT_PUBLIC_API_URL/api/user/profile', {
+        const profileRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!profileRes.ok) throw new Error('Failed to load profile');
         setProfile(await profileRes.json());
 
-        const coursesRes = await fetch('process.env.NEXT_PUBLIC_API_URL/courses', {
+        const coursesRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (coursesRes.ok) {
