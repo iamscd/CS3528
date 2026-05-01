@@ -17,6 +17,7 @@ The platform delivers clinically grounded educational content through a hierarch
   - [Frontend Setup](#frontend-setup)
 - [Configuration](#configuration)
 - [Running the Application](#running-the-application)
+- [Demo Credentials](#demo-credentials)
 - [Testing](#testing)
 - [Deployment](#deployment)
 - [API Overview](#api-overview)
@@ -232,6 +233,18 @@ The Next.js development server will start on `http://localhost:3000` by default.
 ### Accessing the Application
 
 With both servers running, open `http://localhost:3000` in your browser. The frontend will make API calls to the backend at `http://localhost:5000`.
+
+---
+
+## Demo Credentials 
+
+A pre-configured administrator account is available for testing and evaluation purposes:
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@example.com | AdminPass123! |
+
+> **Note:** This account has full administrator privileges, including the ability to create, edit, and delete courses, modules, lessons, and quiz questions.
 
 ---
 
