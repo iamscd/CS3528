@@ -63,11 +63,14 @@ def create_quiz_question():
         if correct_option not in options:
             return flask.jsonify({"message": "Correct option must be one of the provided options"}), 400
 
+        index_to_letter = {0: "A", 1: "B", 2: "C", 3: "D"}
+        correct_letter = index_to_letter.get(options.index(correct_option), "A")
+
         question = LessonQuiz(
             lesson_id=lesson_id,
             question=question_text,
             options=options,
-            correct_option=correct_option,
+            correct_option=correct_letter,
             correct_numeric_answer=None
         )
 
