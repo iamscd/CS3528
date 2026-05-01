@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Zalando_Sans_Expanded } from "next/font/google";
 import "./globals.css";
 import Header from "./components/header";
+import HelpButton from "./components/HelpButton";
+
 
 const instrumentSerif = Zalando_Sans_Expanded({
   subsets: ["latin"],
@@ -35,6 +37,7 @@ export default function RootLayout({
         <main className="min-h-screen">
           {children}
         </main>
+        <HelpButton />
         
       </body>
     </html>

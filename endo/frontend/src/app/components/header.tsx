@@ -114,6 +114,7 @@ export default function Header() {
 }} className="desktop-nav">
   {navLink("/courses", "Courses")}
   {navLink("/profile", "Profile")}
+  {navLink("/help", "Help")}
 
   {!isLoggedIn ? (
     <>
