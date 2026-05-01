@@ -211,28 +211,77 @@ The active configuration is selected based on the `FLASK_ENV` environment variab
 
 ## Running the Application
 
-### Start the Backend
+### Running the Backend
 
+The backend is a Flask API running on port 5000. Open a terminal and follow these steps:
+
+**Step 1 — Navigate to the backend folder**
 ```bash
-cd backend
-source venv/bin/activate  # if not already active
+cd endo/backend
+```
+
+**Step 2 — Create a virtual environment**
+
+This keeps Python dependencies isolated to this project.
+```bash
+python3 -m venv venv
+
+# Mac / Linux:
+source venv/bin/activate
+
+# Windows:
+venv\Scripts\activate
+```
+> Your terminal prompt should now show `(venv)` at the start.
+
+**Step 3 — Install dependencies**
+```bash
+pip install -r requirements.txt
+```
+
+**Step 4 — Start the Flask server**
+```bash
 python app.py
 ```
 
-The Flask server will start on `http://localhost:5000` by default.
+You should see:
+```
+ * Serving Flask app 'server'
+ * Debug mode: on
+ * Running on http://127.0.0.1:5000
+```
+> **macOS note:** If port 5000 is already in use, go to **System Settings → General → AirDrop & Handoff → AirPlay Receiver** and turn it off.
 
-### Start the Frontend
+---
 
+### Running the Frontend
+
+The frontend is a Next.js app running on port 3000. Open a **second terminal tab** (keep the backend running) and follow these steps:
+
+**Step 1 — Navigate to the frontend folder**
 ```bash
-cd frontend
+cd endo/frontend
+```
+
+**Step 2 — Install dependencies**
+```bash
+npm install
+```
+> This may take a minute the first time.
+
+**Step 3 — Start the dev server**
+```bash
 npm run dev
 ```
 
-The Next.js development server will start on `http://localhost:3000` by default.
+You should see:
+```
+  ▲ Next.js 15
+  - Local:   http://localhost:3000
+  - Ready in …s
+```
 
-### Accessing the Application
-
-With both servers running, open `http://localhost:3000` in your browser. The frontend will make API calls to the backend at `http://localhost:5000`.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
